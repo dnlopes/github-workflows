@@ -1,0 +1,49 @@
+name: PR checks
+on:
+  workflow_call:
+
+jobs:
+  semantic_pr_labels:
+    # we only look at the title to lable PRs, that's why we only run this when the title changes
+    if: contains(fromJSON('["opened", "reopened", "edited"]'), github.event.action)
+    name: Semantic labels
+    runs-on: ubuntu-latest
+    steps:
+      - uses: srvaroa/labeler@master
+        name: Add labels
+        env:
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+
+  semantic_pr_title:
+    # we only look at the title to lable PRs
+    if: contains(fromJSON('["opened", "reopened", "edited"]'), github.event.action)
+    name: Semantic title
+    runs-on: ubuntu-latest
+    steps:
+      - uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          requireScope: false
+          subjectPattern: ^(?![A-Z]).+$ # don't start with an uppercase character.
+          subjectPatternError: |
+            The subject "{subject}" found in the pull request title "{title}"
+            didn't match the configured pattern. Please ensure that the subject
+            doesn't start with an uppercase character.
+          types: |
+            fix
+            feat
+            chore
+            breaking-change
+
+  enforce_label:
+    if: contains(fromJSON('["labeled", "unlabeled"]'), github.event.action)
+    needs:
+      - semantic_pr_labels
+    name: Enforce labels
+    runs-on: ubuntu-latest
+    steps:
+      - uses: yogevbd/enforce-label-action@2.1.0
+        with:
+          REQUIRED_LABELS_ANY: "feature,fix,chore,breaking-change"
+          BANNED_LABELS: "WIP,do not merge"
