@@ -5,7 +5,7 @@ on:
 jobs:
   semantic_pr_labels:
     # we only look at the title to lable PRs, that's why we only run this when the title changes
-    if: contains(fromJSON('["opened", "reopened", "edited"]'), github.event.action)
+    #if: contains(fromJSON('["opened", "reopened", "edited"]'), github.event.action)
     name: Semantic labels
     runs-on: ubuntu-latest
     steps:
@@ -16,7 +16,7 @@ jobs:
 
   semantic_pr_title:
     # we only look at the title to lable PRs
-    if: contains(fromJSON('["opened", "reopened", "edited"]'), github.event.action)
+    #if: contains(fromJSON('["opened", "reopened", "edited"]'), github.event.action)
     name: Semantic title
     runs-on: ubuntu-latest
     steps:
@@ -37,7 +37,7 @@ jobs:
             breaking-change
 
   enforce_label:
-    if: contains(fromJSON('["labeled", "unlabeled"]'), github.event.action)
+    #if: contains(fromJSON('["opened", "reopened", "labeled", "unlabeled"]'), github.event.action)
     needs:
       - semantic_pr_labels
     name: Enforce labels
