@@ -26,7 +26,7 @@ jobs:
   semantic_pr_labels:
     name: Semantic labels
     needs:
-      - semantic_pr_labels
+      - semantic_pr_title
     runs-on: ubuntu-latest
     steps:
       - uses: bcoe/conventional-release-labels@v1
