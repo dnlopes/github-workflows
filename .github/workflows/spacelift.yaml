@@ -30,11 +30,14 @@ on:
         required: false
       SPACELIFT_API_KEY_SECRET:
         required: false
-concurrency: ${{ inputs.concurrency_group }}-${{ inputs.stack_name }}
+
 jobs:
   spacelift:
     name: Spacelift
     runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ inputs.concurrency_group }}-${{ inputs.stack_name }}
+      cancel-in-progress: false
     env:
       SPACELIFT_API_KEY_ID: ${{ secrets.SPACELIFT_API_KEY_ID }}
       SPACELIFT_API_KEY_SECRET: ${{ secrets.SPACELIFT_API_KEY_SECRET }}
