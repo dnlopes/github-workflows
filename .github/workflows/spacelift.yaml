@@ -45,11 +45,7 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.GH_API_TOKEN }}
 
     steps:
-      - name: Show Git reference
-        run: |
-          echo "Git reference: ${{ inputs.commit_ref }}"
-
-      - name: Git checkout ${{ inputs.commit_ref }}
+      - name: Checkout ${{ inputs.commit_ref }}
         uses: actions/checkout@v4
         with:
           ref: ${{ inputs.commit_ref }}
