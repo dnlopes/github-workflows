@@ -3,21 +3,8 @@ on:
   workflow_call:
 
 jobs:
-  semantic_pr_labels:
-    # we only look at the title to lable PRs, that's why we only run this when the title changes
-    #if: contains(fromJSON('["opened", "reopened", "edited"]'), github.event.action)
-    name: Semantic labels
-    runs-on: ubuntu-latest
-    steps:
-      - uses: srvaroa/labeler@master
-        name: Add labels
-        env:
-          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-
   semantic_pr_title:
-    # we only look at the title to lable PRs
-    #if: contains(fromJSON('["opened", "reopened", "edited"]'), github.event.action)
-    name: Semantic title
+    name: Title
     runs-on: ubuntu-latest
     steps:
       - uses: amannn/action-semantic-pull-request@v5
@@ -36,14 +23,35 @@ jobs:
             chore
             breaking-change
 
-  enforce_label:
-    #if: contains(fromJSON('["opened", "reopened", "labeled", "unlabeled"]'), github.event.action)
+  semantic_pr_labels:
+    name: Labels
     needs:
-      - semantic_pr_labels
-    name: Enforce labels
+      - semantic_pr_title
     runs-on: ubuntu-latest
     steps:
-      - uses: yogevbd/enforce-label-action@2.1.0
+      - uses: bcoe/conventional-release-labels@v1
+        name: Add conventional release labels
+
+  enforce_label:
+    needs:
+      - semantic_pr_labels
+    name: Check labels
+    runs-on: ubuntu-latest
+    steps:
+      - uses: mheap/github-action-required-labels@v5
+        name: Enforce semantic labels
         with:
-          REQUIRED_LABELS_ANY: "feature,fix,chore,breaking-change"
-          BANNED_LABELS: "WIP,do not merge"
+          mode: minimum
+          count: 1
+          labels: |
+            feat
+            fix
+            breaking
+            ignore-for-release
+
+      - uses: mheap/github-action-required-labels@v5
+        name: Enforce banned labels
+        with:
+          mode: exactly
+          count: 0
+          labels: "do-not-merge, WIP, do not merge"
