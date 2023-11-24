@@ -41,9 +41,9 @@ jobs:
       - uses: mheap/github-action-required-labels@v5
         name: Enforce semantic labels
         with:
-          mode: exactly
+          mode: minimum
           count: 1
-          labels: "feat, fix, chore, breaking"
+          labels: "feat, fix, breaking"
 
       - uses: mheap/github-action-required-labels@v5
         name: Enforce banned labels
