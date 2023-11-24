@@ -47,7 +47,7 @@ jobs:
             feat
             fix
             breaking
-            ignore-for-release"
+            ignore-for-release
 
       - uses: mheap/github-action-required-labels@v5
         name: Enforce banned labels
