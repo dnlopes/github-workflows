@@ -44,7 +44,7 @@ jobs:
           mode: minimum
           count: 1
           labels: |
-            feat
+            feature
             fix
             breaking
             ignore-for-release
