@@ -59,6 +59,11 @@ jobs:
       - name: Enable stack
         run: spacectl stack enable --id ${{ inputs.stack_name }}
 
+      - name: Update stack commit ref
+        run: |
+          commitSha=$(git rev-parse HEAD)
+          spacectl stack set-current-commit --id ${{ inputs.stack_name }} --sha $commitSha
+
       - name: Stack ${{ inputs.action }}
         run: spacectl stack ${{ inputs.action }} --id ${{ inputs.stack_name }} --tail
 
