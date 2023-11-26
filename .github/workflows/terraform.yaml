@@ -73,7 +73,7 @@ jobs:
           soft_fail: false # optional: do not return an error code if there are failed checks
           framework: terraform # optional: run only on a specific infrastructure {cloudformation,terraform,kubernetes,all}
           output_format: github_failed_only # optional: the output format, one of: cli, json, junitxml, github_failed_only, or sarif. Default: sarif
-          download_external_modules: ${{ sec_validation_depdendencies }}
+          download_external_modules: ${{ inputs.sec_validation_depdendencies }}
           var_file: ${{ inputs.working_dir }}/configs/dev.tfvars # optional: variable files to load in addition to the default files. Currently only supported for source Terraform and Helm chart scans.
 
       - uses: terraform-linters/setup-tflint@v3
@@ -88,6 +88,7 @@ jobs:
     permissions:
       pull-requests: write
       contents: read
+      id-token: write
     concurrency:
       group: ${{ inputs.concurrency_group }}-terraform-run
       cancel-in-progress: false
@@ -95,6 +96,12 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::156589501431:role/GitHubActions
+          aws-region: eu-west-1
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
