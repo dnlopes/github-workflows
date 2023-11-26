@@ -155,7 +155,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GH_API_TOKEN }}
           TF_WORKSPACE: ${{ inputs.workspace }}
-          EXPAND_SUMMARY_DETAILS: true
+          EXPAND_SUMMARY_DETAILS: false
         with:
           commenter_type: plan
           commenter_input: ${{ format('{0}{1}', steps.tf_action.outputs.stdout, steps.tf_action.outputs.stderr) }}
