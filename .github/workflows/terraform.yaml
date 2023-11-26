@@ -59,10 +59,10 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
 
-      - name: init
-        id: init
-        working-directory: ${{ inputs.working_dir }}
-        run: terraform init -input=false -upgrade
+      #- name: init
+      #  id: init
+      #  working-directory: ${{ inputs.working_dir }}
+      #  run: terraform init -input=false -upgrade
 
       - name: Terraform validate
         working-directory: ${{ inputs.working_dir }}
@@ -162,8 +162,7 @@ jobs:
 
       - name: ${{ inputs.action }}
         id: tf_action
-        working-directory: ${{ inputs.working_dir }}
-        run: terraform ${{ inputs.action }} -var-file="${{ inputs.tf_vars_filepath }}" -input=false
+        run: terraform -chdir=${{ inputs.working_dir }} ${{ inputs.action }} -var-file="${{ inputs.tf_vars_filepath }}" -input=false
         env:
           TF_WORKSPACE: ${{ inputs.workspace }}
 
