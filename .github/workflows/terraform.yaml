@@ -16,6 +16,11 @@ on:
         description: "The directory in which the TF project is."
         type: string
         default: ./
+      sec_validation_depdendencies:
+        required: false
+        description: "Whether or not to include dependent modules in security validations."
+        type: boolean
+        default: false
     secrets:
       GH_API_TOKEN:
         required: true
@@ -68,12 +73,8 @@ jobs:
           soft_fail: false # optional: do not return an error code if there are failed checks
           framework: terraform # optional: run only on a specific infrastructure {cloudformation,terraform,kubernetes,all}
           output_format: github_failed_only # optional: the output format, one of: cli, json, junitxml, github_failed_only, or sarif. Default: sarif
-          download_external_modules: true # optional: download external terraform modules from public git repositories and terraform registry
+          download_external_modules: ${{ sec_validation_depdendencies }}
           var_file: ${{ inputs.working_dir }}/configs/dev.tfvars # optional: variable files to load in addition to the default files. Currently only supported for source Terraform and Helm chart scans.
-          log_level: DEBUG # optional: set log level. Default WARNING
-          #config_file: path/this_file
-          #baseline: cloudformation/.checkov.baseline # optional: Path to a generated baseline file. Will only report results not in the baseline.
-          #use_enforcement_rules: true # optional - use enforcement rule configs from the platform
 
       - uses: terraform-linters/setup-tflint@v3
         name: Setup TFLint
