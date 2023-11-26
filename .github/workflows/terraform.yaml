@@ -11,6 +11,11 @@ on:
         description: "Name of concurrency group to manage concurrent Github action runs"
         type: string
         default: ${{ github.repository }}
+      workind_dir:
+        required: false
+        description: "The directory in which the TF project is."
+        type: string
+        default: .
     secrets:
       GH_API_TOKEN:
         required: true
@@ -18,29 +23,79 @@ on:
         required: false
 
 jobs:
-  terraform-checks:
-    if: false
-    name: Terraform Validations
+  terraform-linters:
+    if: ${{ github.event.type }} == "pull_request"
+    name: Terraform Lint
     runs-on: ubuntu-latest
     permissions:
-      pull-requests: write
       contents: read
     concurrency:
-      group: ${{ inputs.concurrency_group }}-terraform-checks
+      group: ${{ inputs.concurrency_group }}-terraform-linters
       cancel-in-progress: true
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install Terraform
+      - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
+
+      - name: Terraform init
+        id: init
+        working-directory: $${{ inputs.workind_dir }}
+        run: terraform init -reconfigure -upgrade
+
+      - name: Terraform validate
+        working-directory: $${{ inputs.workind_dir }}
+        run: terraform validate
+
+      - name: Terraform fmt
+        working-directory: $${{ inputs.workind_dir }}
+        run: terraform fmt -check -recursive
+
+      - name: Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          scan-ref: $${{ inputs.workind_dir }}
+          trivy-config: trivy.yaml
 
       - uses: terraform-linters/setup-tflint@v3
         name: Setup TFLint
 
-      - name: Run TFLint
-        run: tflint --format compact
+      #- name: Run TFLint
+      #  run: tflint --format compact
+
+  terraform-run:
+    name: Terraform ${{ inputs.action }}
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+    concurrency:
+      group: ${{ inputs.concurrency_group }}-terraform-run
+      cancel-in-progress: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Terraform init
+        id: init
+        working-directory: $${{ inputs.workind_dir }}
+        run: terraform init -reconfigure -upgrade
+
+      - uses: robburger/terraform-pr-commenter@v1
+        name: PR comment (init)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_API_TOKEN }}
+        with:
+          commenter_type: init
+          commenter_input: ${{ format('{0}{1}', steps.init.outputs.stdout, steps.init.outputs.stderr) }}
+          commenter_exitcode: ${{ steps.init.outputs.exitcode }}
 
   infracost:
     if: ${{ github.event.type }} == "pull_request"
