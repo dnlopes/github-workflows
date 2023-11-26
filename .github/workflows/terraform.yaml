@@ -25,7 +25,7 @@ on:
 jobs:
   terraform-linters:
     if: ${{ github.event.type }} == "pull_request"
-    name: Terraform Lint
+    name: Lint
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -67,7 +67,7 @@ jobs:
       #  run: tflint --format compact
 
   terraform-run:
-    name: Terraform ${{ inputs.action }}
+    name: ${{ inputs.action }}
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
