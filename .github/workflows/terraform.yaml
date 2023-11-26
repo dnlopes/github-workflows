@@ -46,6 +46,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      security-events: write
     concurrency:
       group: ${{ inputs.concurrency_group }}-terraform-linters
       cancel-in-progress: true
@@ -83,7 +84,7 @@ jobs:
           quiet: true # optional: display only failed checks
           soft_fail: true # optional: do not return an error code if there are failed checks
           framework: terraform # optional: run only on a specific infrastructure {cloudformation,terraform,kubernetes,all}
-          output_format: github_failed_only # optional: the output format, one of: cli, json, junitxml, github_failed_only, or sarif. Default: sarif
+          output_format: sarif
           download_external_modules: ${{ inputs.sec_validation_depdendencies }}
           var_file: ${{ inputs.working_dir }}/configs/dev.tfvars # optional: variable files to load in addition to the default files. Currently only supported for source Terraform and Helm chart scans.
 
