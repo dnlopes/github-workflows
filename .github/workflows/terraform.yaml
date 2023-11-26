@@ -93,6 +93,7 @@ jobs:
       - name: Checkov
         uses: bridgecrewio/checkov-action@master
         with:
+          #config_file: ../.checkov.yaml
           directory: ${{ inputs.working_dir }}
           framework: terraform
           var_file: ${{ inputs.working_dir }}/${{ inputs.tf_vars_filepath }}
