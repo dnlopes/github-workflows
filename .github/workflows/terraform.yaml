@@ -77,17 +77,6 @@ jobs:
           scan-ref: ${{ inputs.working_dir }}
           trivy-config: trivy.yaml
 
-      - name: Checkov
-        uses: bridgecrewio/checkov-action@master
-        with:
-          directory: ${{ inputs.working_dir }}
-          quiet: true # optional: display only failed checks
-          soft_fail: true # optional: do not return an error code if there are failed checks
-          framework: terraform # optional: run only on a specific infrastructure {cloudformation,terraform,kubernetes,all}
-          output_format: sarif
-          download_external_modules: ${{ inputs.sec_validation_depdendencies }}
-          var_file: ${{ inputs.working_dir }}/configs/dev.tfvars # optional: variable files to load in addition to the default files. Currently only supported for source Terraform and Helm chart scans.
-
       - uses: terraform-linters/setup-tflint@v3
         name: Setup TFLint
 
@@ -100,6 +89,24 @@ jobs:
       - name: TFLint run
         working-directory: ${{ inputs.working_dir }}
         run: tflint -f compact
+
+      - name: Checkov
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: ${{ inputs.working_dir }}
+          quiet: true # optional: display only failed checks
+          soft_fail: true # optional: do not return an error code if there are failed checks
+          framework: terraform # optional: run only on a specific infrastructure {cloudformation,terraform,kubernetes,all}
+          output_format: sarif
+          download_external_modules: ${{ inputs.sec_validation_depdendencies }}
+          var_file: ${{ inputs.working_dir }}/configs/dev.tfvars # optional: variable files to load in addition to the default files. Currently only supported for source Terraform and Helm chart scans.
+          output_file_path: console,results.sarif
+
+      - name: Checkov upload sarif
+        uses: github/codeql-action/upload-sarif@v2
+        if: success() || failure()
+        with:
+          sarif_file: results.sarif
 
   terraform-run:
     name: ${{ inputs.action }}
