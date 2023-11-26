@@ -11,11 +11,11 @@ on:
         description: "Name of concurrency group to manage concurrent Github action runs"
         type: string
         default: ${{ github.repository }}
-      workind_dir:
+      working_dir:
         required: false
         description: "The directory in which the TF project is."
         type: string
-        default: .
+        default: ./
     secrets:
       GH_API_TOKEN:
         required: true
@@ -42,22 +42,22 @@ jobs:
 
       - name: Terraform init
         id: init
-        working-directory: $${{ inputs.workind_dir }}
+        working-directory: $${{ inputs.working_dir }}
         run: terraform init -reconfigure -upgrade
 
       - name: Terraform validate
-        working-directory: $${{ inputs.workind_dir }}
+        working-directory: $${{ inputs.working_dir }}
         run: terraform validate
 
       - name: Terraform fmt
-        working-directory: $${{ inputs.workind_dir }}
+        working-directory: $${{ inputs.working_dir }}
         run: terraform fmt -check -recursive
 
       - name: Trivy
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: fs
-          scan-ref: $${{ inputs.workind_dir }}
+          scan-ref: $${{ inputs.working_dir }}
           trivy-config: trivy.yaml
 
       - uses: terraform-linters/setup-tflint@v3
@@ -85,7 +85,7 @@ jobs:
 
       - name: Terraform init
         id: init
-        working-directory: $${{ inputs.workind_dir }}
+        working-directory: $${{ inputs.working_dir }}
         run: terraform init -reconfigure -upgrade
 
       - uses: robburger/terraform-pr-commenter@v1
