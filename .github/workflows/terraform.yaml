@@ -142,22 +142,12 @@ jobs:
           TF_WORKSPACE: ${{ inputs.workspace }}
 
       - uses: GetTerminus/terraform-pr-commenter@v3
-        name: PR comment (init)
-        if: ${{ github.event.type }} == "pull_request"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_API_TOKEN }}
-          TF_WORKSPACE: ${{ inputs.workspace }}
-        with:
-          commenter_type: init
-          commenter_input: ${{ format('{0}{1}', steps.init.outputs.stdout, steps.init.outputs.stderr) }}
-          commenter_exitcode: ${{ steps.init.outputs.exitcode }}
-
-      - uses: GetTerminus/terraform-pr-commenter@v3
         if: ${{ github.event.type }} == "pull_request"
         name: PR comment (plan)
         env:
           GITHUB_TOKEN: ${{ secrets.GH_API_TOKEN }}
           TF_WORKSPACE: ${{ inputs.workspace }}
+          EXPAND_SUMMARY_DETAILS: true
         with:
           commenter_type: plan
           commenter_input: ${{ format('{0}{1}', steps.tf_action.outputs.stdout, steps.tf_action.outputs.stderr) }}
