@@ -59,10 +59,9 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
 
-      #- name: init
-      #  id: init
-      #  working-directory: ${{ inputs.working_dir }}
-      #  run: terraform init -input=false -upgrade
+      - name: init
+        working-directory: ${{ inputs.working_dir }}
+        run: terraform init -input=false -upgrade -backend=false
 
       - name: Terraform validate
         working-directory: ${{ inputs.working_dir }}
