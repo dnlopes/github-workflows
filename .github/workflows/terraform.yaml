@@ -59,15 +59,15 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
 
-      - name: init
+      - name: TF init
         working-directory: ${{ inputs.working_dir }}
         run: terraform init -input=false -upgrade -backend=false
 
-      - name: Terraform validate
+      - name: TF validate
         working-directory: ${{ inputs.working_dir }}
         run: terraform validate
 
-      - name: Terraform fmt
+      - name: TF fmt
         working-directory: ${{ inputs.working_dir }}
         run: terraform fmt -check -recursive
 
@@ -148,7 +148,7 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
 
-      - name: init
+      - name: TF init
         id: init
         working-directory: ${{ inputs.working_dir }}
         run: terraform init -input=false -upgrade
@@ -159,15 +159,15 @@ jobs:
           terraform workspace new ${{ inputs.workspace }} || true
           terraform workspace select ${{ inputs.workspace }}
 
-      - name: ${{ inputs.action }}
+      - name: TF ${{ inputs.action }}
         id: tf_action
         run: terraform -chdir=${{ inputs.working_dir }} ${{ inputs.action }} -var-file="${{ inputs.tf_vars_filepath }}" -input=false
         env:
           TF_WORKSPACE: ${{ inputs.workspace }}
 
       - uses: robburger/terraform-pr-commenter@v1
-        if: ${{ github.event.type }} == "pull_request"
         name: PR comment (init)
+        if: ${{ github.event.type }} == "pull_request"
         env:
           GITHUB_TOKEN: ${{ secrets.GH_API_TOKEN }}
         with:
