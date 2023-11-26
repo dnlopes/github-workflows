@@ -38,8 +38,6 @@ on:
         required: true
       INFRACOST_API_KEY:
         required: true
-      PLURALITH_API_KEY:
-        required: true
 
 jobs:
   terraform-linters:
@@ -89,24 +87,24 @@ jobs:
           download_external_modules: ${{ inputs.sec_validation_depdendencies }}
           var_file: ${{ inputs.working_dir }}/configs/dev.tfvars # optional: variable files to load in addition to the default files. Currently only supported for source Terraform and Helm chart scans.
 
-      - name: Pluralith init
-        uses: Pluralith/actions/init@v1.4.0
-        with:
-          terraform-path: ${{ inputs.working_dir }}
-          api-key: ${{ secrets.PLURALITH_API_KEY }}
+      #- name: Pluralith init
+      #  uses: Pluralith/actions/init@v1.4.0
+      #  with:
+      #    terraform-path: ${{ inputs.working_dir }}
+      #    api-key: ${{ secrets.PLURALITH_API_KEY }}
 
-      - name: Pluralith run
-        uses: Pluralith/actions/run@v1.4.0
-        with:
-          terraform-command: "plan"
-          terraform-path: ${{ inputs.working_dir }}
-          show-changes: true
-          show-drift: true
+      #- name: Pluralith run
+      #  uses: Pluralith/actions/run@v1.4.0
+      #  with:
+      #    terraform-command: plan
+      #    terraform-path: ${{ inputs.working_dir }}
+      #    show-changes: true
+      #    show-drift: true
 
-      - name: Pluralith comment
-        uses: Pluralith/actions/comment@v1.4.0
-        with:
-          terraform-path: ${{ inputs.working_dir }}
+      #- name: Pluralith comment
+      #  uses: Pluralith/actions/comment@v1.4.0
+      #  with:
+      #    terraform-path: ${{ inputs.working_dir }}
 
       #- uses: terraform-linters/setup-tflint@v3
       #  name: Setup TFLint
@@ -147,8 +145,6 @@ jobs:
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
-        with:
-          terraform_wrapper: true
 
       - name: TF init
         id: init
