@@ -93,17 +93,11 @@ jobs:
       - name: Checkov
         uses: bridgecrewio/checkov-action@master
         with:
-          #config_file: ../.checkov.yaml
-          directory: ${{ inputs.working_dir }}
+          config_file: .checkov.yaml
+          #directory: ${{ inputs.working_dir }}
           framework: terraform
           var_file: ${{ inputs.working_dir }}/${{ inputs.tf_vars_filepath }}
           output_file_path: console,results.sarif
-
-      #- name: Checkov upload sarif
-      #  uses: github/codeql-action/upload-sarif@v2
-      #  if: success() || failure()
-      #  with:
-      #    sarif_file: results.sarif
 
   terraform-run:
     name: ${{ inputs.action }}
