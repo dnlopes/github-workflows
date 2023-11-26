@@ -1,0 +1,191 @@
+name: Terraform
+on:
+  workflow_call:
+    inputs:
+      action:
+        required: true
+        description: "The type of action to execute in Spacelift (preview, deploy)"
+        type: string
+      tf_vars_filepath:
+        required: true
+        description: "The location of the tfvars file."
+        type: string
+      aws_role_arn:
+        required: true
+        description: "The IAM role ARN for the workflow to assume when running Terraform"
+        type: string
+      workspace:
+        required: true
+        description: "The name of the Terraform workspace."
+        type: string
+      concurrency_group:
+        required: false
+        description: "Name of concurrency group to manage concurrent Github action runs"
+        type: string
+        default: ${{ github.repository }}
+      working_dir:
+        required: false
+        description: "The directory in which the TF project is."
+        type: string
+        default: ./
+      sec_validation_depdendencies:
+        required: false
+        description: "Whether or not to include dependent modules in security validations."
+        type: boolean
+        default: false
+    secrets:
+      GH_API_TOKEN:
+        required: true
+      INFRACOST_API_KEY:
+        required: true
+
+jobs:
+  terraform-linters:
+    if: ${{ github.event.type }} == "pull_request"
+    name: Lint
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    concurrency:
+      group: ${{ inputs.concurrency_group }}-terraform-linters
+      cancel-in-progress: true
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: TF init
+        working-directory: ${{ inputs.working_dir }}
+        run: terraform init -input=false -upgrade -backend=false
+
+      - name: TF validate
+        working-directory: ${{ inputs.working_dir }}
+        run: terraform validate
+
+      - name: TF fmt
+        working-directory: ${{ inputs.working_dir }}
+        run: terraform fmt -check -recursive
+
+      - name: Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          scan-ref: ${{ inputs.working_dir }}
+          trivy-config: trivy.yaml
+
+      - uses: terraform-linters/setup-tflint@v3
+        name: Setup TFLint
+
+      - name: TFLint init
+        run: tflint --init
+        working-directory: ${{ inputs.working_dir }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_API_TOKEN }}
+
+      - name: TFLint run
+        working-directory: ${{ inputs.working_dir }}
+        run: tflint -f compact
+
+      - name: Checkov
+        uses: bridgecrewio/checkov-action@master
+        with:
+          config_file: .checkov.yaml
+          #directory: ${{ inputs.working_dir }}
+          framework: terraform
+          var_file: ${{ inputs.working_dir }}/${{ inputs.tf_vars_filepath }}
+          output_file_path: console,results.sarif
+
+  terraform-run:
+    name: ${{ inputs.action }}
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+      id-token: write
+    concurrency:
+      group: ${{ inputs.concurrency_group }}-terraform-run
+      cancel-in-progress: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ inputs.aws_role_arn }}
+          aws-region: eu-west-1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: TF init
+        id: init
+        working-directory: ${{ inputs.working_dir }}
+        run: terraform init -input=false -upgrade
+
+      - name: Select workspace
+        working-directory: ${{ inputs.working_dir }}
+        run: |
+          terraform workspace new ${{ inputs.workspace }} || true
+          terraform workspace select ${{ inputs.workspace }}
+
+      - name: TF ${{ inputs.action }}
+        id: tf_action
+        run: terraform -chdir=${{ inputs.working_dir }} ${{ inputs.action }} -var-file="${{ inputs.tf_vars_filepath }}" -input=false
+        env:
+          TF_WORKSPACE: ${{ inputs.workspace }}
+
+      - uses: GetTerminus/terraform-pr-commenter@v3
+        if: ${{ github.event.type }} == "pull_request"
+        name: PR comment (plan)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_API_TOKEN }}
+          TF_WORKSPACE: ${{ inputs.workspace }}
+          EXPAND_SUMMARY_DETAILS: false
+        with:
+          commenter_type: plan
+          commenter_input: ${{ format('{0}{1}', steps.tf_action.outputs.stdout, steps.tf_action.outputs.stderr) }}
+          commenter_exitcode: ${{ steps.tf_action.outputs.exitcode }}
+
+  infracost:
+    if: ${{ github.event.type }} == "pull_request"
+    name: Infracost
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+    concurrency:
+      group: ${{ inputs.concurrency_group }}-infracost
+      cancel-in-progress: true
+
+    steps:
+      - name: Setup
+        uses: infracost/actions/setup@v2
+        with:
+          api-key: ${{ secrets.INFRACOST_API_KEY }}
+
+      # Checkout the base branch of the pull request (e.g. main/master).
+      - name: Checkout base branch
+        uses: actions/checkout@v3
+        with:
+          ref: "${{ github.event.pull_request.base.ref }}"
+
+      # Generate Infracost JSON file as the baseline.
+      - name: Generate baseline
+        run: infracost breakdown --path=${TF_ROOT} --format=json --out-file=/tmp/infracost-base.json
+
+      # Checkout the current PR branch so we can create a diff.
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+
+      # Generate an Infracost diff and save it to a JSON file.
+      - name: Generate cost diff
+        run: infracost diff --path=${TF_ROOT} --format=json --compare-to=/tmp/infracost-base.json --out-file=/tmp/infracost.json
+
+      - name: PR comment
+        run: infracost comment github --path=/tmp/infracost.json --repo=$GITHUB_REPOSITORY --github-token=${{github.token}} --pull-request=${{github.event.pull_request.number}} --behavior=delete-and-new
