@@ -113,7 +113,7 @@ jobs:
       - name: init
         id: init
         working-directory: ${{ inputs.working_dir }}
-        run: terraform init -backend-config="key=david"
+        run: terraform init
 
       - name: Select workspace
         working-directory: ${{ inputs.working_dir }}
@@ -121,7 +121,7 @@ jobs:
 
       - name: Plan
         working-directory: ${{ inputs.working_dir }}
-        run: terraform plan -var-file=".configs/dev.tfvars" -input=false
+        run: terraform plan -var-file="iac/configs/dev.tfvars" -input=false
         env:
           TF_WORKSPACE: ${{ inputs.workspace }}
 
