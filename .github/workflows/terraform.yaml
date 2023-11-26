@@ -42,22 +42,22 @@ jobs:
 
       - name: Terraform init
         id: init
-        working-directory: $${{ inputs.working_dir }}
+        working-directory: ${{ inputs.working_dir }}
         run: terraform init -reconfigure -upgrade
 
       - name: Terraform validate
-        working-directory: $${{ inputs.working_dir }}
+        working-directory: ${{ inputs.working_dir }}
         run: terraform validate
 
       - name: Terraform fmt
-        working-directory: $${{ inputs.working_dir }}
+        working-directory: ${{ inputs.working_dir }}
         run: terraform fmt -check -recursive
 
       - name: Trivy
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: fs
-          scan-ref: $${{ inputs.working_dir }}
+          scan-ref: ${{ inputs.working_dir }}
           trivy-config: trivy.yaml
 
       - uses: terraform-linters/setup-tflint@v3
@@ -85,7 +85,7 @@ jobs:
 
       - name: Terraform init
         id: init
-        working-directory: $${{ inputs.working_dir }}
+        working-directory: ${{ inputs.working_dir }}
         run: terraform init -reconfigure -upgrade
 
       - uses: robburger/terraform-pr-commenter@v1
