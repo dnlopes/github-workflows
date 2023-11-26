@@ -32,8 +32,8 @@ jobs:
     if: ${{ github.event.type }} == "pull_request"
     name: Lint
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
+    #permissions:
+    #  contents: read
     concurrency:
       group: ${{ inputs.concurrency_group }}-terraform-linters
       cancel-in-progress: true
@@ -86,8 +86,8 @@ jobs:
     name: ${{ inputs.action }}
     runs-on: ubuntu-latest
     permissions:
-      pull-requests: write
-      contents: read
+      #pull-requests: write
+      #contents: read
       id-token: write
     concurrency:
       group: ${{ inputs.concurrency_group }}-terraform-run
@@ -124,9 +124,9 @@ jobs:
     if: ${{ github.event.type }} == "pull_request"
     name: Infracost
     runs-on: ubuntu-latest
-    permissions:
-      pull-requests: write
-      contents: read
+    #permissions:
+    #pull-requests: write
+    #contents: read
     concurrency:
       group: ${{ inputs.concurrency_group }}-infracost
       cancel-in-progress: true
