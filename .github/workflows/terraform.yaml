@@ -41,8 +41,8 @@ on:
 
 jobs:
   terraform-linters:
-    if: ${{ github.event.type }} == "pull_request"
-    name: Lint
+    if: github.event_name == "pull_request"
+    name: Linters
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -136,12 +136,17 @@ jobs:
 
       - name: TF ${{ inputs.action }}
         id: tf_action
-        run: terraform -chdir=${{ inputs.working_dir }} ${{ inputs.action }} -var-file="${{ inputs.tf_vars_filepath }}" -input=false
+        run: |
+          if [ "${{ inputs.action }}" = "plan" ]; then
+            terraform -chdir=${{ inputs.working_dir }} ${{ inputs.action }} -var-file="${{ inputs.tf_vars_filepath }}" -input=false -lock=false
+          else
+            terraform -chdir=${{ inputs.working_dir }} ${{ inputs.action }} -var-file="${{ inputs.tf_vars_filepath }}" -input=false -auto-approve
+          fi
         env:
           TF_WORKSPACE: ${{ inputs.workspace }}
 
       - uses: GetTerminus/terraform-pr-commenter@v3
-        if: ${{ github.event.type }} == "pull_request"
+        if: github.event_name == "pull_request"
         name: PR comment (plan)
         env:
           GITHUB_TOKEN: ${{ secrets.GH_API_TOKEN }}
@@ -153,7 +158,7 @@ jobs:
           commenter_exitcode: ${{ steps.tf_action.outputs.exitcode }}
 
   infracost:
-    if: ${{ github.event.type }} == "pull_request"
+    if: github.event_name == "pull_request"
     name: Infracost
     runs-on: ubuntu-latest
     permissions:

@@ -68,9 +68,9 @@ jobs:
         run: spacectl stack ${{ inputs.action }} --id ${{ inputs.stack_name }} --tail
 
       - name: Disable stack
-        if: ${{ always() }}
+        if: always()
         run: spacectl stack disable --id ${{ inputs.stack_name }}
 
       - name: Unlock Stack
-        if: ${{ always() }}
+        if: always()
         run: spacectl stack unlock --id ${{ inputs.stack_name }}
