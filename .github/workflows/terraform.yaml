@@ -41,7 +41,7 @@ on:
 
 jobs:
   terraform-linters:
-    if: github.event_name = "pull_request"
+    if: github.event_name == 'pull_request'
     name: Linters
     runs-on: ubuntu-latest
     permissions:
@@ -146,7 +146,7 @@ jobs:
           TF_WORKSPACE: ${{ inputs.workspace }}
 
       - uses: GetTerminus/terraform-pr-commenter@v3
-        if: github.event_name = "pull_request"
+        if: github.event_name == 'pull_request'
         name: PR comment (plan)
         env:
           GITHUB_TOKEN: ${{ secrets.GH_API_TOKEN }}
@@ -158,7 +158,7 @@ jobs:
           commenter_exitcode: ${{ steps.tf_action.outputs.exitcode }}
 
   infracost:
-    if: github.event_name = "pull_request"
+    if: github.event_name == 'pull_request'
     name: Infracost
     runs-on: ubuntu-latest
     permissions:
