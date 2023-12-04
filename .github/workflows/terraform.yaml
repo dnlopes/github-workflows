@@ -182,7 +182,7 @@ jobs:
 
       # Generate Infracost JSON file as the baseline.
       - name: Generate baseline
-        run: infracost breakdown --path=${{ inputs.workspace }} --format=json --out-file=/tmp/infracost-base.json
+        run: infracost breakdown --path=${{ inputs.working_dir }} --format=json --out-file=/tmp/infracost-base.json
 
       # Checkout the current PR branch so we can create a diff.
       - name: Checkout PR branch
@@ -190,7 +190,7 @@ jobs:
 
       # Generate an Infracost diff and save it to a JSON file.
       - name: Generate cost diff
-        run: infracost diff --path=${{ inputs.workspace }} --format=json --compare-to=/tmp/infracost-base.json --out-file=/tmp/infracost.json
+        run: infracost diff --path=${{ inputs.working_dir }} --format=json --compare-to=/tmp/infracost-base.json --out-file=/tmp/infracost.json
 
       - name: PR comment
         run: infracost comment github --path=/tmp/infracost.json --repo=$GITHUB_REPOSITORY --github-token=${{github.token}} --pull-request=${{github.event.pull_request.number}} --behavior=delete-and-new
