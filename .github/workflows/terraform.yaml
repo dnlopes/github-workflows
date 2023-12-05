@@ -33,6 +33,11 @@ on:
         description: "Whether or not to include dependent modules in security validations."
         type: boolean
         default: false
+      infracost_usage_file:
+        required: false
+        description: "The infracost usage definition, if it exists."
+        type: string
+        default: infracost-usage.yaml
     secrets:
       GH_API_TOKEN:
         required: true
@@ -182,7 +187,7 @@ jobs:
 
       # Generate Infracost JSON file as the baseline.
       - name: Generate baseline
-        run: infracost breakdown --path=${TF_ROOT} --format=json --out-file=/tmp/infracost-base.json
+        run: infracost breakdown --path=${{ inputs.working_dir }} --format=json --out-file=/tmp/infracost-base.json --usage-file=${{ inputs.infracost_usage_file }}
 
       # Checkout the current PR branch so we can create a diff.
       - name: Checkout PR branch
@@ -190,7 +195,7 @@ jobs:
 
       # Generate an Infracost diff and save it to a JSON file.
       - name: Generate cost diff
-        run: infracost diff --path=${TF_ROOT} --format=json --compare-to=/tmp/infracost-base.json --out-file=/tmp/infracost.json
+        run: infracost diff --path=${{ inputs.working_dir }} --format=json --compare-to=/tmp/infracost-base.json --out-file=/tmp/infracost.json --usage-file=${{ inputs.infracost_usage_file }}
 
       - name: PR comment
         run: infracost comment github --path=/tmp/infracost.json --repo=$GITHUB_REPOSITORY --github-token=${{github.token}} --pull-request=${{github.event.pull_request.number}} --behavior=delete-and-new
