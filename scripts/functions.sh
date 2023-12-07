@@ -1,15 +1,14 @@
 #!/bin/bash
 set -e
 
-currentDir="$(dirname "$(readlink -f "$0")")"
-source $(dirname "$(readlink -f "$0")")/pretty_print.sh
+currentDir="$(dirname "$(readlink -f "${BASH_SOURCE}")")"
+source ${currentDir}/pretty_print.sh
 
 AUTOMATION_ROLE_NAME="IaCResourcesManager"
 
 assumeRole() {
     if [ "$1" = "" ]; then printRed "usage: assumeRole <aws-account> <role-name>" && exit 1; fi
     if [ "$2" = "" ]; then printRed "usage: assumeRole <aws-account> <role-name>" && exit 1; fi
-    if [ "$AWS_PROFILE" = "" ]; printRed "error: 'AWS_PROFILE' environment variable must be set." && exit 1; fi
 
     printScreen "Assuming role $2 on account $1"
     roleSession=$(echo $RANDOM | md5 | head -c 10)
