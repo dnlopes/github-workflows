@@ -44,7 +44,8 @@ parseArguments() {
         getUsageHelp
         exit 0
         ;;
-    *)
+    *)  
+        echo $1
         echo "***************************\n"
         echo "Error: Invalid arguments\n"
         getUsageHelp
