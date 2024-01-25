@@ -45,10 +45,10 @@ parseArguments() {
         exit 0
         ;;
     *)
-        printRed "***************************\n"
-        printRed "Error: Invalid arguments\n"
+        echo "***************************\n"
+        echo "Error: Invalid arguments\n"
         getUsageHelp
-        printRed "***************************\n"
+        echo "***************************\n"
         exit 1
     esac
     shift
