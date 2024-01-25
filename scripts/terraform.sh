@@ -17,7 +17,8 @@ main() {
     baseCommand="terraform -chdir=$tfDir $tfAction -input=false"
     if [[ "$tfAction" == "apply" || "$tfAction" == "destroy" ]]; then baseCommand="$baseCommand -auto-approve"; fi
     if [ "$tfAction" == "plan" ]; then baseCommand="$baseCommand -lock=false"; fi
-    if [ "$tfVarsFilePath" != "" ]; then baseCommand="$baseCommand -var-file="$(TF_VARFILE)""; fi
+    if [ "$tfVarsFilePath" != "" ]; then baseCommand="$baseCommand -var-file="$tfVarsFilePath""; fi
+    $baseCommand
 
 }
 
@@ -31,13 +32,13 @@ parseArguments() {
     --action=*)
         tfAction="${1#*=}"
         ;;
-    --dir)
+    --dir=*)
         tfDir="${1#*=}"
         ;;
-    --workspace)
+    --workspace=*)
         tfWorkspace="${1#*=}"
         ;;
-    --vars-file)
+    --vars-file=*)
         tfVarsFilePath="${1#*=}"
         ;;
     --help)
