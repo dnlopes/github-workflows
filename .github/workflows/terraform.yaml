@@ -1,10 +1,10 @@
-name: Terraform
+name: OpenTF
 on:
   workflow_call:
     inputs:
       action:
         required: true
-        description: "The type of action to execute in Terraform (plan/apply/destroy)"
+        description: "The type of action to execute in OpenTofu (plan/apply/destroy)"
         type: string
       tf_vars_filepath:
         required: true
@@ -12,11 +12,11 @@ on:
         type: string
       aws_role_arn:
         required: true
-        description: "The IAM role ARN for the workflow to assume when running Terraform"
+        description: "The IAM role ARN for the workflow to assume when running OpenTofu"
         type: string
       workspace:
         required: true
-        description: "The name of the Terraform workspace."
+        description: "The name of the OpenTofu workspace."
         type: string
       concurrency_group:
         required: false
@@ -25,7 +25,7 @@ on:
         default: ${{ github.repository }}
       working_dir:
         required: false
-        description: "The directory in which the TF project is."
+        description: "The directory in which the OpenTF project is."
         type: string
         default: ./
       run_infracost:
@@ -72,10 +72,10 @@ on:
       GH_API_TOKEN:
         required: true
       INFRACOST_API_KEY:
-        required: true
+        required: false
 
 jobs:
-  terraform-linters:
+  opentf-linters:
     if: github.event_name == 'pull_request'
     name: Linters
     runs-on: ubuntu-latest
@@ -83,27 +83,27 @@ jobs:
       contents: read
       security-events: write
     concurrency:
-      group: ${{ inputs.concurrency_group }}-terraform-linters
+      group: ${{ inputs.concurrency_group }}-opentf-linters
       cancel-in-progress: true
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v3
+    - name: Setup OpenTofu
+      uses: opentofu/setup-opentofu@v1
 
-    - name: TF init
+    - name: OpenTF init
       working-directory: ${{ inputs.working_dir }}
-      run: terraform init -input=false -upgrade -backend=false
+      run: tofu init -input=false -upgrade -backend=false
 
-    - name: TF validate
+    - name: OpenTF validate
       working-directory: ${{ inputs.working_dir }}
-      run: terraform validate
+      run: tofu validate
 
-    - name: TF fmt
+    - name: OpenTF fmt
       working-directory: ${{ inputs.working_dir }}
-      run: terraform fmt -check -recursive
+      run: tofu fmt -check -recursive
 
     - name: Trivy
       if: ${{ inputs.run_trivy }}
@@ -142,7 +142,7 @@ jobs:
         var_file: ${{ inputs.tf_vars_filepath }}
         output_file_path: console,results.sarif
 
-  terraform-run:
+  opentf-run:
     name: ${{ inputs.action }}
     runs-on: ubuntu-latest
     permissions:
@@ -150,7 +150,7 @@ jobs:
       contents: read
       id-token: write
     concurrency:
-      group: ${{ inputs.concurrency_group }}-terraform-run
+      group: ${{ inputs.concurrency_group }}-opentf-run
       cancel-in-progress: false
 
     steps:
@@ -163,28 +163,28 @@ jobs:
         role-to-assume: ${{ inputs.aws_role_arn }}
         aws-region: eu-west-1
 
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v3
+    - name: Setup OpenTofu
+      uses: opentofu/setup-opentofu@v1
 
-    - name: TF init
+    - name: OpenTF init
       id: init
       working-directory: ${{ inputs.working_dir }}
-      run: terraform init -input=false -upgrade
+      run: tofu init -input=false -upgrade
 
     - name: Select workspace
       working-directory: ${{ inputs.working_dir }}
       run: |
-        terraform workspace new ${{ inputs.workspace }} || true
-        terraform workspace select ${{ inputs.workspace }}
+        tofu workspace new ${{ inputs.workspace }} || true
+        tofu workspace select ${{ inputs.workspace }}
 
-    - name: TF ${{ inputs.action }}
+    - name: OpenTF ${{ inputs.action }}
       working-directory: ${{ inputs.working_dir }}
       id: tf_action
       run: |
         if [ "${{ inputs.action }}" = "plan" ]; then
-          terraform ${{ inputs.action }} -var-file="${{ inputs.tf_vars_filepath }}" -input=false -lock=false
+          tofu ${{ inputs.action }} -var-file="${{ inputs.tf_vars_filepath }}" -input=false -lock=false
         else
-          terraform ${{ inputs.action }} -var-file="${{ inputs.tf_vars_filepath }}" -input=false -auto-approve
+          tofu ${{ inputs.action }} -var-file="${{ inputs.tf_vars_filepath }}" -input=false -auto-approve
         fi
       env:
         TF_WORKSPACE: ${{ inputs.workspace }}
@@ -202,7 +202,7 @@ jobs:
         commenter_exitcode: ${{ steps.tf_action.outputs.exitcode }}
 
   infracost:
-    if: ${{ inputs.run_infracost == 'true' && github.event_name == 'pull_request'}}
+    if: ${{ inputs.run_infracost == true && github.event_name == 'pull_request' }}
     name: Infracost
     runs-on: ubuntu-latest
     permissions:
@@ -227,7 +227,7 @@ jobs:
     # Generate Infracost JSON file as the baseline.
     - name: Generate baseline
       working-directory: ${{ inputs.working_dir }}
-      run: infracost breakdown --path=. --format=json --out-file=/tmp/infracost-base.json --usage-file=${{ inputs.infracost_usage_filepath }}
+      run: infracost breakdown --path=. --format=json --out-file=/tmp/infracost-base.json --usage-file=${{ inputs.infracost_usage_filepath }} --terraform-var-file=${{ inputs.tf_vars_filepath }}
 
     # Checkout the current PR branch so we can create a diff.
     - name: Checkout PR branch
@@ -236,7 +236,7 @@ jobs:
     # Generate an Infracost diff and save it to a JSON file.
     - name: Generate cost diff
       working-directory: ${{ inputs.working_dir }}
-      run: infracost diff --path=. --format=json --compare-to=/tmp/infracost-base.json --out-file=/tmp/infracost.json --usage-file=${{ inputs.infracost_usage_filepath }}
+      run: infracost diff --path=. --format=json --compare-to=/tmp/infracost-base.json --out-file=/tmp/infracost.json --usage-file=${{ inputs.infracost_usage_filepath }} --terraform-var-file=${{ inputs.tf_vars_filepath }}
 
     - name: PR comment
       run: infracost comment github --path=/tmp/infracost.json --repo=$GITHUB_REPOSITORY --github-token=${{github.token}} --pull-request=${{github.event.pull_request.number}} --behavior=delete-and-new
