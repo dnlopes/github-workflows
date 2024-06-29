@@ -1,0 +1,28 @@
+name: InstallCommonTools
+description: Installs common tooling for OpenTofu workflows
+runs:
+  using: "composite"
+  steps:
+  - name: Install Python
+    uses: actions/setup-python@v5
+
+  - name: Install Go-Taskfile
+    uses: pnorton5432/setup-task@v1
+    with:
+      task-version: 3.37.2
+
+  - name: Install OpenTofu
+    uses: opentofu/setup-opentofu@v1
+
+  - name: Install TFLint
+    uses: terraform-linters/setup-tflint@v4
+
+  - name: Install checkov
+    shell: bash
+    run: pip3 install checkov
+
+  - name: Install Trivy
+    shell: bash
+    run: curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v0.52.2
+
+

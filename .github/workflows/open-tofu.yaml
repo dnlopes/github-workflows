@@ -1,0 +1,222 @@
+name: OpenTofu
+on:
+  workflow_call:
+    inputs:
+      taskfile_filepath:
+        required: false
+        description: "The location of the Taskfile.yaml file, related to the 'repository-root-dir'"
+        type: string
+        default: tools/utilities/Taskfile.yaml
+      action:
+        required: true
+        description: "The type of action to execute in OpenTofu (plan/apply/destroy)"
+        type: string
+      tf_vars_filepath:
+        required: true
+        description: "The location of the tfvars file, related to the 'repository-root-dir'"
+        type: string
+      aws_role_arn:
+        required: true
+        description: "The IAM role ARN for the workflow to assume when running OpenTofu"
+        type: string
+      workspace:
+        required: true
+        description: "The name of the OpenTofu workspace."
+        type: string
+      concurrency_group:
+        required: false
+        description: "Name of concurrency group to manage concurrent Github action runs"
+        type: string
+        default: ${{ github.repository }}
+      terraform_dir:
+        required: false
+        description: "The directory in which the OpenTF project is."
+        type: string
+        default: ./
+      skip_infracost:
+        required: false
+        description: Whether or not to skip Infracost analyzes
+        type: boolean
+        default: false
+      infracost_usage_filepath:
+        required: false
+        description: "The infracost usage file definition, related to the 'repository-root-dir'"
+        type: string
+        default: infracost-usage.yaml
+      skip_checkcov:
+        required: false
+        description: Whether or not to skip Checkcov scan
+        type: boolean
+        default: false
+      checkcov_config_filepath:
+        required: false
+        description: "The checkcov config file path, related to the 'repository-root-dir'"
+        type: string
+        default: .checkov.yaml
+      skip_tflint:
+        required: false
+        description: Whether or not to skip TFLint scan
+        type: boolean
+        default: false
+      tflint_config_filepath:
+        required: false
+        description: "The tflint config file path, related to the 'repository-root-dir'"
+        type: string
+        default: .tflint.hcl
+      skip_trivy:
+        required: false
+        description: Whether or not to skip Trivy scan
+        type: boolean
+        default: false
+      trivy_config_filepath:
+        required: false
+        description: "The Trivy config file path, related to the 'repository-root-dir'"
+        type: string
+        default: trivy.yaml
+    secrets:
+      GH_API_TOKEN:
+        required: true
+      INFRACOST_API_KEY:
+        required: false
+
+jobs:
+  opentf-linters:
+    if: github.event_name == 'pull_request'
+    name: Linters
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    concurrency:
+      group: ${{ inputs.concurrency_group }}-opentf-linters
+      cancel-in-progress: true
+    env:
+      TOFU_CONFIGURATION_DIRECTORY: ${{ inputs.terraform_dir }}
+      TFLINT_CONFIG_FILE: ${{ inputs.tflint_config_filepath }}
+      TRIVY_CONFIG_FILE: ${{ inputs.trivy_config_filepath }}
+      TOFU_INPUTS_FILE: ${{ inputs.tf_vars_filepath }}
+      TOFU_WORKSPACE: ${{ inputs.workspace }}
+      SKIP_TRIVY_SCAN: "${{ inputs.skip_trivy }}"
+      SKIP_TFLINT: "${{ inputs.skip_tflint }}"
+      SKIP_CHECKOV: "${{ inputs.skip_checkcov }}"
+      TF_IN_AUTOMATION: "true"
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: 'true'
+
+    - name: Checkout reusable-workflows repository
+      uses: actions/checkout@v4
+      with:
+        repository: dnlopes/github-workflows
+        path: actions
+
+    - name: Install common tools
+      uses: ./actions/.github/actions/install-common-tools
+
+    - name: OpenTofu checks
+      run: task tofu-ready --dir=$(pwd) --taskfile ${{ inputs.taskfile_filepath }}
+
+  opentf-run:
+    name: ${{ inputs.action }}
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+      id-token: write
+
+    concurrency:
+      group: ${{ inputs.concurrency_group }}-opentf-run
+      cancel-in-progress: false
+
+    env:
+      TOFU_CONFIGURATION_DIRECTORY: ${{ inputs.terraform_dir }}
+      TFLINT_CONFIG_FILE: ${{ inputs.tflint_config_filepath }}
+      TRIVY_CONFIG_FILE: ${{ inputs.trivy_config_filepath }}
+      TOFU_INPUTS_FILE: ${{ inputs.tf_vars_filepath }}
+      TOFU_WORKSPACE: ${{ inputs.workspace }}
+      TF_IN_AUTOMATION: "true"
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: 'true'
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: ${{ inputs.aws_role_arn }}
+        aws-region: eu-west-1
+
+    - name: Checkout reusable-workflows repository
+      uses: actions/checkout@v4
+      with:
+        repository: dnlopes/github-workflows
+        path: actions
+
+    - name: Install common tools
+      uses: ./actions/.github/actions/install-common-tools
+
+    - name: OpenTofu ${{ inputs.action }}
+      run: |
+        if [ "${{ inputs.action }}" = "plan" ]; then
+          task tofu-plan --dir=$(pwd) --taskfile ${{ inputs.taskfile_filepath }}
+        else
+          task tofu-apply --dir=$(pwd) --taskfile ${{ inputs.taskfile_filepath }}
+        fi
+
+    - uses: GetTerminus/terraform-pr-commenter@v3
+      #if: github.event_name == 'pull_request'
+      if: false
+      name: PR comment (plan)
+      env:
+        GITHUB_TOKEN: ${{ secrets.GH_API_TOKEN }}
+        TF_WORKSPACE: ${{ inputs.workspace }}
+        EXPAND_SUMMARY_DETAILS: false
+      with:
+        commenter_type: plan
+        commenter_input: ${{ format('{0}{1}', steps.tf_action.outputs.stdout, steps.tf_action.outputs.stderr) }}
+        commenter_exitcode: ${{ steps.tf_action.outputs.exitcode }}
+
+  infracost:
+    if: ${{ inputs.skip_infracost == false && github.event_name == 'pull_request' }}
+    name: Infracost
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+    concurrency:
+      group: ${{ inputs.concurrency_group }}-infracost
+      cancel-in-progress: true
+
+    steps:
+    - name: Setup
+      uses: infracost/actions/setup@v3
+      with:
+        api-key: ${{ secrets.INFRACOST_API_KEY }}
+
+    # Checkout the base branch of the pull request (e.g. main/master).
+    - name: Checkout base branch
+      uses: actions/checkout@v4
+      with:
+        ref: "${{ github.event.pull_request.base.ref }}"
+
+    # Generate Infracost JSON file as the baseline.
+    - name: Generate baseline
+      working-directory: ${{ inputs.terraform_dir }}
+      run: infracost breakdown --path=. --format=json --out-file=/tmp/infracost-base.json --usage-file=${{ inputs.infracost_usage_filepath }} --terraform-var-file=${{ inputs.tf_vars_filepath }}
+
+    # Checkout the current PR branch so we can create a diff.
+    - name: Checkout PR branch
+      uses: actions/checkout@v4
+
+    # Generate an Infracost diff and save it to a JSON file.
+    - name: Generate cost diff
+      working-directory: ${{ inputs.terraform_dir }}
+      run: infracost diff --path=. --format=json --compare-to=/tmp/infracost-base.json --out-file=/tmp/infracost.json --usage-file=${{ inputs.infracost_usage_filepath }} --terraform-var-file=${{ inputs.tf_vars_filepath }}
+
+    - name: PR comment
+      run: infracost comment github --path=/tmp/infracost.json --repo=$GITHUB_REPOSITORY --github-token=${{github.token}} --pull-request=${{github.event.pull_request.number}} --behavior=delete-and-new
