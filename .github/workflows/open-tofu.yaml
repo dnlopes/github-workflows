@@ -7,6 +7,11 @@ on:
         description: "The location of the Taskfile.yaml file, related to the 'repository-root-dir'"
         type: string
         default: tools/utilities/Taskfile.yaml
+      build_command:
+        required: false
+        description: "A build command that is executed prior to running the OpenTofu validations, in order to prepare the deployment"
+        type: string
+        default: ""
       action:
         required: true
         description: "The type of action to execute in OpenTofu (plan/apply/destroy)"
@@ -116,6 +121,10 @@ jobs:
     - name: Install common tools
       uses: ./actions/.github/actions/install-common-tools
 
+    - name: Build
+      if: ${{ inputs.build_command != '' }}
+      run: ${{ inputs.build_command }}
+
     - name: OpenTofu checks
       run: task tofu-ready --dir=$(pwd) --taskfile ${{ inputs.taskfile_filepath }}
 
@@ -159,6 +168,10 @@ jobs:
 
     - name: Install common tools
       uses: ./actions/.github/actions/install-common-tools
+
+    - name: Build
+      if: ${{ inputs.build_command != '' }}
+      run: ${{ inputs.build_command }}
 
     - name: OpenTofu ${{ inputs.action }}
       run: |
