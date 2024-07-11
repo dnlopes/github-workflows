@@ -7,51 +7,62 @@ jobs:
     name: Title
     runs-on: ubuntu-latest
     steps:
-      - uses: amannn/action-semantic-pull-request@v5
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          requireScope: false
-          subjectPattern: ^(?![A-Z]).+$ # don't start with an uppercase character.
-          subjectPatternError: |
-            The subject "{subject}" found in the pull request title "{title}"
-            didn't match the configured pattern. Please ensure that the subject
-            doesn't start with an uppercase character.
-          types: |
-            fix
-            feat
-            chore
-            breaking-change
+    - uses: amannn/action-semantic-pull-request@v5
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        requireScope: false
+        subjectPattern: ^(?![A-Z]).+$ # don't start with an uppercase character.
+        subjectPatternError: |
+          The subject "{subject}" found in the pull request title "{title}"
+          didn't match the configured pattern. Please ensure that the subject
+          doesn't start with an uppercase character.
+        types: |
+          fix
+          feat
+          chore
+          breaking-change
 
   semantic_pr_labels:
     name: Labels
     needs:
-      - semantic_pr_title
+    - semantic_pr_title
     runs-on: ubuntu-latest
     steps:
-      - uses: bcoe/conventional-release-labels@v1
-        name: Add conventional release labels
+    - uses: bcoe/conventional-release-labels@v1
+      name: Add conventional release labels
+      with:
+        type_labels: |
+          {
+          "feat": "feature",
+          "fix": "fix",
+          "breaking": "breaking",
+          "chore": "patch",
+          }
 
   enforce_label:
     needs:
-      - semantic_pr_labels
+    - semantic_pr_labels
     name: Check labels
     runs-on: ubuntu-latest
     steps:
-      - uses: mheap/github-action-required-labels@v5
-        name: Enforce semantic labels
-        with:
-          mode: minimum
-          count: 1
-          labels: |
-            feature
-            fix
-            breaking
-            ignore-for-release
+    - uses: mheap/github-action-required-labels@v5
+      name: Enforce semantic labels
+      with:
+        mode: minimum
+        count: 1
+        labels: |
+          feature
+          fix
+          breaking
+          ignore-for-release
+          chore
+          patch
+          major
 
-      - uses: mheap/github-action-required-labels@v5
-        name: Enforce banned labels
-        with:
-          mode: exactly
-          count: 0
-          labels: "do-not-merge, WIP, do not merge"
+    - uses: mheap/github-action-required-labels@v5
+      name: Enforce banned labels
+      with:
+        mode: exactly
+        count: 0
+        labels: "do-not-merge, WIP, do not merge"
