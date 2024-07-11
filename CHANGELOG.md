@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.1.0](https://github.com/dnlopes/github-workflows/compare/v1.0.1...v1.1.0) (2024-07-11)
+
+
+### Features
+
+* add .release-please-manifest.json ([9b3d3de](https://github.com/dnlopes/github-workflows/commit/9b3d3de5926140f62ed6a85bdfebd1140e3bbc4f))
+* enrich release-please with more prefixes ([6e1dfa8](https://github.com/dnlopes/github-workflows/commit/6e1dfa84dbf1244d38c34ef1372764d1112f7e70))
+
+
+### Bug Fixes
+
+* add explicit release-type input ([1121bad](https://github.com/dnlopes/github-workflows/commit/1121badc863e059036c51ce2dd3d752c695c6de9))
+
 ## [1.0.1](https://github.com/dnlopes/github-workflows/compare/v1.0.0...v1.0.1) (2024-07-11)
 
 
