@@ -1,6 +1,7 @@
 name: PR checks
 on:
   workflow_call:
+  pull_request:
 
 jobs:
   semantic_pr_title:
