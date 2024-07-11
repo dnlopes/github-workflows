@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/dnlopes/github-workflows/compare/v1.0.0...v1.0.1) (2024-07-11)
+
+
+### Bug Fixes
+
+* better pr checks ([3685cd5](https://github.com/dnlopes/github-workflows/commit/3685cd5076b3ee6279cdc67aebda7ae630861bc6))
+
 ## 1.0.0 (2024-07-11)
 
 
