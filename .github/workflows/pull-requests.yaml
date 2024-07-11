@@ -21,48 +21,14 @@ jobs:
         types: |
           fix
           feat
-          chore
-          breaking-change
-
-  semantic_pr_labels:
-    name: Labels
-    needs:
-    - semantic_pr_title
-    runs-on: ubuntu-latest
-    steps:
-    - uses: bcoe/conventional-release-labels@v1
-      name: Add conventional release labels
-      with:
-        type_labels: |
-          {
-          "feat": "feature",
-          "fix": "fix",
-          "breaking": "breaking",
-          "chore": "patch",
-          }
+          docs
 
   enforce_label:
-    needs:
-    - semantic_pr_labels
-    name: Check labels
+    name: Labels
     runs-on: ubuntu-latest
     steps:
     - uses: mheap/github-action-required-labels@v5
-      name: Enforce semantic labels
-      with:
-        mode: minimum
-        count: 1
-        labels: |
-          feature
-          fix
-          breaking
-          ignore-for-release
-          chore
-          patch
-          major
-
-    - uses: mheap/github-action-required-labels@v5
-      name: Enforce banned labels
+      name: Check forbidden labels
       with:
         mode: exactly
         count: 0
