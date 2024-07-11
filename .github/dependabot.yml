@@ -1,7 +1,7 @@
 version: 2
 updates:
 - package-ecosystem: github-actions
-  labels: ["gh-action deps"]
+  labels: [bot, gh-action deps]
   groups:
     non-breaking-changes-version-updates:
       update-types: [minor, patch]

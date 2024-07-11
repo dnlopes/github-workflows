@@ -29,6 +29,9 @@ jobs:
           build
           ci
           deps
+        ignoreLabels: |
+          bot
+
 
   enforce_label:
     name: Labels
