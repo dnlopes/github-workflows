@@ -21,4 +21,4 @@ updates:
   reviewers:
   - dnlopes
   commit-message:
-    prefix: chore
+    prefix: deps
