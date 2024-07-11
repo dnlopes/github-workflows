@@ -107,7 +107,7 @@ jobs:
 
     - name: Trivy
       if: ${{ inputs.run_trivy }}
-      uses: aquasecurity/trivy-action@0.22.0
+      uses: aquasecurity/trivy-action@0.24.0
       with:
         # TODO: until this action allows to configure a workind_directory, we cannot improve this section
         scan-ref: ${{ inputs.working_dir }}
@@ -134,7 +134,7 @@ jobs:
 
     - name: Checkov
       if: ${{ inputs.run_checkcov }}
-      uses: bridgecrewio/checkov-action@v12.1347.0
+      uses: bridgecrewio/checkov-action@v12.2821.0
       with:
         config_file: ${{ inputs.checkcov_config_filepath }}
         directory: ${{ inputs.workind_dir }}
