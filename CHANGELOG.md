@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.0](https://github.com/dnlopes/github-workflows/compare/v1.1.0...v1.2.0) (2024-07-11)
+
+
+### Features
+
+* add bot label to dependabot PRs ([cf8d01f](https://github.com/dnlopes/github-workflows/commit/cf8d01fbc35fec35c5ecb41d63242c47932cffc0))
+* change dependabot prefix ([495cb81](https://github.com/dnlopes/github-workflows/commit/495cb811652f132fcf2c523652269a38a22d5d45))
+
 ## [1.1.0](https://github.com/dnlopes/github-workflows/compare/v1.0.1...v1.1.0) (2024-07-11)
 
 
