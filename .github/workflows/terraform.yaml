@@ -1,242 +1,192 @@
-name: OpenTF
+name: Terraform
+
 on:
   workflow_call:
     inputs:
-      action:
-        required: true
-        description: "The type of action to execute in OpenTofu (plan/apply/destroy)"
-        type: string
-      tf_vars_filepath:
-        required: true
-        description: "The location of the tfvars file, related to the 'working_dir'"
-        type: string
-      aws_role_arn:
-        required: true
-        description: "The IAM role ARN for the workflow to assume when running OpenTofu"
-        type: string
-      workspace:
-        required: true
-        description: "The name of the OpenTofu workspace."
-        type: string
-      concurrency_group:
+      terraformProjectDir:
         required: false
-        description: "Name of concurrency group to manage concurrent Github action runs"
         type: string
-        default: ${{ github.repository }}
-      working_dir:
+        default: .
+        description: path of the Terraform project, relative to the root of the repository
+      runTerraformAction:
         required: false
-        description: "The directory in which the OpenTF project is."
-        type: string
-        default: ./
-      run_infracost:
-        required: false
-        description: Whether or not to run Infracost analyzes
         type: boolean
-        default: false
-      infracost_usage_filepath:
+        default: true
+        description: whether or not to run Terraform plan/apply/destroy
+      awsRoleArn:
         required: false
-        description: "The infracost usage file definition, related to the 'working_dir'"
+        description: the IAM role ARN to be assumed when running OpenTofu operations
         type: string
-        default: infracost-usage.yaml
-      run_checkcov:
+        default: ""
+      terraformWorkspace:
         required: false
-        description: Whether or not to run checkcov analyzes
-        type: boolean
-        default: false
-      checkcov_config_filepath:
-        required: false
-        description: "The checkcov config file path, related to the 'working_dir'"
+        default: ""
+        description: the name of the OpenTofu workspace
         type: string
-        default: .checkov.yaml
-      run_tflint:
+      terraformAction:
         required: false
-        description: Whether or not to run tflint analyzes
-        type: boolean
-        default: false
-      tflint_config_filepath:
-        required: false
-        description: "The tflint config file path, related to the 'working_dir'"
+        default: plan
+        description: the type of action to execute in OpenTofu (plan/apply/destroy)
         type: string
-        default: .tflint.hcl
-      run_trivy:
-        required: false
-        description: Whether or not to run Trivy analyzes
-        type: boolean
-        default: false
-      trivy_config_filepath:
-        required: false
-        description: "The Trivy config file path, related to the 'working_dir'"
-        type: string
-        default: trivy.yaml
-    secrets:
-      GH_API_TOKEN:
+      terraformVarsFile: # TODO: support empty vars file
         required: true
-      INFRACOST_API_KEY:
+        description: the location of the tfvars file, related to the 'terraformProjectDir'
+        type: string
+      addPullRequestComments:
         required: false
+        type: boolean
+        default: true
+      terraformVersion:
+        required: false
+        type: string
+        default: 1.6.0
+      additionalEnvironmentVariables:
+        required: false
+        type: string
+        default: ""
+      downloadRunArtifacts:
+        required: false
+        type: boolean
+        default: true
+      artifactsLocation:
+        required: false
+        type: string
+        default: "artifacts"
+
+permissions:
+  pull-requests: write
+  contents: read
+  id-token: write # needed for OIDC login in AWS
 
 jobs:
-  opentf-linters:
-    if: github.event_name == 'pull_request'
-    name: Linters
+  terraform:
+    name: Terraform
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      security-events: write
-    concurrency:
-      group: ${{ inputs.concurrency_group }}-opentf-linters
-      cancel-in-progress: true
+    defaults:
+      run:
+        working-directory: ${{ inputs.terraformProjectDir }}
+    env:
+      TF_IN_AUTOMATION: true
+      TF_INPUT: false
+      TF_CLI_ARGS: -no-color
+      TF_CLI_ARGS_plan: -lock=false -var-file=${{ inputs.terraformVarsFile }}
+      TF_CLI_ARGS_apply: -var-file=${{ inputs.terraformVarsFile }}
+      TOFU_WORKSPACE: ${{ inputs.terraformWorkspace }}
+      TF_WORKSPACE: ${{ inputs.terraformWorkspace }}
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Setup OpenTofu
-      uses: opentofu/setup-opentofu@v1
+    - name: Checkout reusable-workflows repository
+      uses: actions/checkout@v4
+      with:
+        repository: dnlopes/github-workflows
+        path: actions
+        ref: better-workflows
 
-    - name: OpenTF init
-      working-directory: ${{ inputs.working_dir }}
-      run: tofu init -input=false -upgrade -backend=false
+    - name: Set additional environment
+      if: ${{ inputs.additionalEnvironmentVariables != '' }}
+      uses: ./actions/.github/actions/parse-addiitonal-env
+      with:
+        additionalEnvironmentVariables: ${{ inputs.additionalEnvironmentVariables }}
 
-    - name: OpenTF validate
-      working-directory: ${{ inputs.working_dir }}
+    - name: Download artifacts
+      if: ${{ inputs.downloadRunArtifacts }}
+      uses: actions/download-artifact@v4
+      with:
+        path: ${{ inputs.artifactsLocation }}
+
+    - name: Install tools
+      uses: ./actions/.github/actions/install-common-tools
+      with:
+        terraformVersion: ${{ inputs.terraformVersion }}
+
+    # first init without backend, so we can run validation on it without needing credentials
+    - name: Init (backend=false)
+      id: init_backend_false
+      run: tofu init -backend=false
+
+    - name: Format
+      id: fmt
+      continue-on-error: true
+      run: tofu fmt -recursive -diff -check
+
+    - name: Validate
+      id: validate
       run: tofu validate
 
-    - name: OpenTF fmt
-      working-directory: ${{ inputs.working_dir }}
-      run: tofu fmt -check -recursive
-
-    - name: Trivy
-      if: ${{ inputs.run_trivy }}
-      uses: aquasecurity/trivy-action@0.22.0
-      with:
-        # TODO: until this action allows to configure a workind_directory, we cannot improve this section
-        scan-ref: ${{ inputs.working_dir }}
-        scan-type: fs
-        trivy-config: trivy.yaml
-        #trivy-config: ${{ inputs.trivy_config_filepath }}
-        #tf-vars: ${{ inputs.tf_vars_filepath }}
-
-    - uses: terraform-linters/setup-tflint@v4
-      if: ${{ inputs.run_tflint }}
-      name: Setup TFLint
-
-    - name: TFLint init
-      if: ${{ inputs.run_tflint }}
-      run: tflint --init --config=${{ inputs.tflint_config_filepath }}
-      working-directory: ${{ inputs.working_dir }}
-      env:
-        GITHUB_TOKEN: ${{ secrets.GH_API_TOKEN }}
-
-    - name: TFLint run
-      if: ${{ inputs.run_tflint }}
-      working-directory: ${{ inputs.working_dir }}
-      run: tflint --config=${{ inputs.tflint_config_filepath }} --var-file=${{ inputs.tf_vars_filepath }}
-
-    - name: Checkov
-      if: ${{ inputs.run_checkcov }}
-      uses: bridgecrewio/checkov-action@v12.1347.0
-      with:
-        config_file: ${{ inputs.checkcov_config_filepath }}
-        directory: ${{ inputs.workind_dir }}
-        framework: terraform
-        var_file: ${{ inputs.tf_vars_filepath }}
-        output_file_path: console,results.sarif
-
-  opentf-run:
-    name: ${{ inputs.action }}
-    runs-on: ubuntu-latest
-    permissions:
-      pull-requests: write
-      contents: read
-      id-token: write
-    concurrency:
-      group: ${{ inputs.concurrency_group }}-opentf-run
-      cancel-in-progress: false
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
     - name: Configure AWS Credentials
+      if: ${{ inputs.runTerraformAction }}
       uses: aws-actions/configure-aws-credentials@v4
       with:
-        role-to-assume: ${{ inputs.aws_role_arn }}
+        role-to-assume: ${{ inputs.awsRoleArn }}
         aws-region: eu-west-1
 
-    - name: Setup OpenTofu
-      uses: opentofu/setup-opentofu@v1
-
-    - name: OpenTF init
-      id: init
-      working-directory: ${{ inputs.working_dir }}
-      run: tofu init -input=false -upgrade
-
-    - name: Select workspace
-      working-directory: ${{ inputs.working_dir }}
+    # now init with backend, to prepare the plan step
+    - name: Terraform init (backend=true)
+      if: ${{ inputs.runTerraformAction }}
+      id: init_backend_true
       run: |
-        tofu workspace new ${{ inputs.workspace }} || true
-        tofu workspace select ${{ inputs.workspace }}
+        tofu workspace create ${{ inputs.terraformWorkspace }} || true
+        tofu init
 
-    - name: OpenTF ${{ inputs.action }}
-      working-directory: ${{ inputs.working_dir }}
-      id: tf_action
+    - name: debug
       run: |
-        if [ "${{ inputs.action }}" = "plan" ]; then
-          tofu ${{ inputs.action }} -var-file="${{ inputs.tf_vars_filepath }}" -input=false -lock=false
-        else
-          tofu ${{ inputs.action }} -var-file="${{ inputs.tf_vars_filepath }}" -input=false -auto-approve
-        fi
-      env:
-        TF_WORKSPACE: ${{ inputs.workspace }}
+        ls -lhsa ./../artifacts/main
+        echo "DEPOIS"
+        ls -lhsa ./../artifacts/
+        echo "AGORA"
+        stat ./../artifacts/main
+    - name: Terraform ${{ inputs.terraformAction }}
+      if: ${{ inputs.runTerraformAction }}
+      id: plan_or_apply
+      run: tofu ${{ inputs.terraformAction }}
 
-    - uses: GetTerminus/terraform-pr-commenter@v3
-      if: github.event_name == 'pull_request'
-      name: PR comment (plan)
+    - name: Comment PR (fmt)
+      uses: robburger/terraform-pr-commenter@v1.5.0
+      if: always() && github.event_name == 'pull_request' && inputs.addPullRequestComments && (steps.fmt.outcome == 'success' || steps.fmt.outcome == 'failure')
       env:
-        GITHUB_TOKEN: ${{ secrets.GH_API_TOKEN }}
-        TF_WORKSPACE: ${{ inputs.workspace }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        TF_WORKSPACE: ${{ inputs.terraformProjectDir }}
+        EXPAND_SUMMARY_DETAILS: false
+      with:
+        commenter_type: fmt
+        commenter_input: ${{ format('{0}{1}', steps.fmt.outputs.stdout, steps.fmt.outputs.stderr) }}
+        commenter_exitcode: ${{ steps.fmt.outputs.exitcode }}
+
+    - name: Comment PR (validate)
+      uses: robburger/terraform-pr-commenter@v1.5.0
+      if: always() && github.event_name == 'pull_request' && inputs.addPullRequestComments && (steps.validate.outcome == 'success' || steps.validate.outcome == 'failure')
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        TF_WORKSPACE: ${{ inputs.terraformProjectDir }}
+        EXPAND_SUMMARY_DETAILS: false
+      with:
+        commenter_type: validate
+        commenter_input: ${{ format('{0}{1}', steps.validate.outputs.stdout, steps.validate.outputs.stderr) }}
+        commenter_exitcode: ${{ steps.validate.outputs.exitcode }}
+
+    - name: Comment PR (init)
+      uses: robburger/terraform-pr-commenter@v1.5.0
+      if: always() && github.event_name == 'pull_request' && inputs.addPullRequestComments && (steps.init_backend_true.outcome == 'success' || steps.init_backend_true.outcome == 'failure')
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        TF_WORKSPACE: ${{ inputs.terraformProjectDir }}
+        EXPAND_SUMMARY_DETAILS: false
+      with:
+        commenter_type: init
+        commenter_input: ${{ format('{0}{1}', steps.init_backend_true.outputs.stdout, steps.init_backend_true.outputs.stderr) }}
+        commenter_exitcode: ${{ steps.init_backend_true.outputs.exitcode }}
+
+    - name: Comment PR (plan)
+      uses: robburger/terraform-pr-commenter@v1.5.0
+      if: always() && github.event_name == 'pull_request' && inputs.addPullRequestComments && (steps.plan_or_apply.outcome == 'success' || steps.plan_or_apply.outcome == 'failure')
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        TF_WORKSPACE: ${{ inputs.terraformProjectDir }}
         EXPAND_SUMMARY_DETAILS: false
       with:
         commenter_type: plan
-        commenter_input: ${{ format('{0}{1}', steps.tf_action.outputs.stdout, steps.tf_action.outputs.stderr) }}
-        commenter_exitcode: ${{ steps.tf_action.outputs.exitcode }}
-
-  infracost:
-    if: ${{ inputs.run_infracost == true && github.event_name == 'pull_request' }}
-    name: Infracost
-    runs-on: ubuntu-latest
-    permissions:
-      pull-requests: write
-      contents: read
-    concurrency:
-      group: ${{ inputs.concurrency_group }}-infracost
-      cancel-in-progress: true
-
-    steps:
-    - name: Setup
-      uses: infracost/actions/setup@v3
-      with:
-        api-key: ${{ secrets.INFRACOST_API_KEY }}
-
-    # Checkout the base branch of the pull request (e.g. main/master).
-    - name: Checkout base branch
-      uses: actions/checkout@v4
-      with:
-        ref: "${{ github.event.pull_request.base.ref }}"
-
-    # Generate Infracost JSON file as the baseline.
-    - name: Generate baseline
-      working-directory: ${{ inputs.working_dir }}
-      run: infracost breakdown --path=. --format=json --out-file=/tmp/infracost-base.json --usage-file=${{ inputs.infracost_usage_filepath }} --terraform-var-file=${{ inputs.tf_vars_filepath }}
-
-    # Checkout the current PR branch so we can create a diff.
-    - name: Checkout PR branch
-      uses: actions/checkout@v4
-
-    # Generate an Infracost diff and save it to a JSON file.
-    - name: Generate cost diff
-      working-directory: ${{ inputs.working_dir }}
-      run: infracost diff --path=. --format=json --compare-to=/tmp/infracost-base.json --out-file=/tmp/infracost.json --usage-file=${{ inputs.infracost_usage_filepath }} --terraform-var-file=${{ inputs.tf_vars_filepath }}
-
-    - name: PR comment
-      run: infracost comment github --path=/tmp/infracost.json --repo=$GITHUB_REPOSITORY --github-token=${{github.token}} --pull-request=${{github.event.pull_request.number}} --behavior=delete-and-new
+        commenter_input: ${{ format('{0}{1}', steps.plan_or_apply.outputs.stdout, steps.plan_or_apply.outputs.stderr) }}
+        commenter_exitcode: ${{ steps.plan_or_apply.outputs.exitcode }}

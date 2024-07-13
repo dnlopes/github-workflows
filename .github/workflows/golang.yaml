@@ -1,0 +1,87 @@
+name: Golang
+
+on:
+  workflow_call:
+    inputs:
+      golangProjectDir:
+        required: false
+        type: string
+        default: .
+        description: path of the Golang project, relative to the root of the repository
+      uploadGoArtifacts:
+        required: false
+        type: boolean
+        default: true
+        description: whether or not to publish the Golang artifact
+      goVersion:
+        required: false
+        type: string
+        default: "1.22"
+      failOnLintErrors:
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  golang:
+    name: Build
+    runs-on: ubuntu-latest
+    outputs:
+      output1: ${{ steps.step1.outputs.test }}
+    defaults:
+      run:
+        working-directory: ${{ inputs.golangProjectDir }}
+    permissions:
+      contents: read # Required: allow read access to the content for analysis.
+      pull-requests: read # Optional: allow read access to pull request. Use with `only-new-issues` option.
+      checks: write # Optional: allow write access to checks to allow the action to annotate code in the PR.
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Checkout reusable-workflows repository
+      uses: actions/checkout@v4
+      with:
+        repository: dnlopes/github-workflows
+        path: actions
+        ref: better-workflows
+
+    - name: Install tools
+      uses: ./actions/.github/actions/install-common-tools
+      with:
+        goVersion: ${{ inputs.goVersion }}
+
+    - name: Dependencies
+      run: go get .
+
+    - name: Build
+      run: go build -o main ./...
+
+    - name: Test
+      run: go test -json > TestResults-${{ inputs.goVersion }}.json
+
+    - name: Golangci-lint
+      uses: golangci/golangci-lint-action@v6
+      continue-on-error: true
+      with:
+        version: latest
+        working-directory: ${{ inputs.golangProjectDir }}
+
+    - name: Upload Go test results
+      if: ${{ inputs.uploadGoArtifacts }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: Go-results-${{ inputs.goVersion }}
+        path: TestResults-${{ inputs.goVersion }}.json
+        retention-days: 1
+        overwrite: true
+
+    - name: Upload Go binary
+      if: ${{ inputs.uploadGoArtifacts }}
+      uses: actions/upload-artifact@v4
+      with:
+        if-no-files-found: error
+        path: ${{ inputs.golangProjectDir }}/main # artifacts action always uses the root directory
+        retention-days: 1
+        overwrite: true

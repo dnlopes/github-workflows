@@ -1,0 +1,22 @@
+name: InstallCommonTools
+description: Installs common tooling for OpenTofu workflows
+
+inputs:
+  additionalEnvironmentVariables:
+    description: a multi-line string with keypairs of type A=B
+    required: true
+    default: ""
+
+runs:
+  using: "composite"
+  steps:
+  - name: Parse
+    shell: bash
+    run: |
+      echo "${{ inputs.additionalEnvironmentVariables }}" | while IFS= read -r line; do
+        if [[ -n "$line" ]]; then
+          IFS="=" read -r key value <<< "$line"
+          echo "environment variable '$key' has value '$value'"
+          echo "$key=$value" >> "$GITHUB_ENV"
+        fi
+      done

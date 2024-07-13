@@ -1,10 +1,11 @@
-name: PR checks
+name: Semantic PR
 on:
   workflow_call:
   pull_request:
+    types: [opened, reopened, edited, labeled, unlabeled, synchronize]
 
 jobs:
-  semantic_pr_title:
+  pr_title:
     name: Title
     runs-on: ubuntu-latest
     steps:
@@ -32,8 +33,7 @@ jobs:
         ignoreLabels: |
           bot
 
-
-  enforce_label:
+  labels:
     name: Labels
     runs-on: ubuntu-latest
     steps:
