@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.3.0](https://github.com/dnlopes/github-workflows/compare/v1.2.0...v1.3.0) (2024-07-14)
+
+
+### Features
+
+* add better workflows ([2977897](https://github.com/dnlopes/github-workflows/commit/2977897b304a3399586a3de50a0127d153640928))
+* remove debug code and redeclared permissions at the workflow level ([a9e1968](https://github.com/dnlopes/github-workflows/commit/a9e1968c556e500f306af390541ed9128439021c))
+* remove deprecated local action ([e098352](https://github.com/dnlopes/github-workflows/commit/e098352c8a8838738064fcda094fb640a2c87c34))
+
+
+### Bug Fixes
+
+* remove unused submodules registry on Dependabot configuration ([29acc5f](https://github.com/dnlopes/github-workflows/commit/29acc5f6234417a60cf7a3c0145bd71a1ec716ce))
+
 ## [1.2.0](https://github.com/dnlopes/github-workflows/compare/v1.1.0...v1.2.0) (2024-07-11)
 
 
