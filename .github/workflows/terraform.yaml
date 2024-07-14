@@ -1,5 +1,7 @@
 name: Terraform
 
+# TODO: support Security scan
+
 on:
   workflow_call:
     inputs:
@@ -40,18 +42,6 @@ on:
         required: false
         type: string
         default: 1.6.0
-      additionalEnvironmentVariables:
-        required: false
-        type: string
-        default: ""
-      downloadRunArtifacts:
-        required: false
-        type: boolean
-        default: true
-      artifactsLocation:
-        required: false
-        type: string
-        default: "artifacts"
 
 permissions:
   pull-requests: write
@@ -83,19 +73,6 @@ jobs:
       with:
         repository: dnlopes/github-workflows
         path: actions
-        ref: better-workflows
-
-    - name: Set additional environment
-      if: ${{ inputs.additionalEnvironmentVariables != '' }}
-      uses: ./actions/.github/actions/parse-addiitonal-env
-      with:
-        additionalEnvironmentVariables: ${{ inputs.additionalEnvironmentVariables }}
-
-    - name: Download artifacts
-      if: ${{ inputs.downloadRunArtifacts }}
-      uses: actions/download-artifact@v4
-      with:
-        path: ${{ inputs.artifactsLocation }}
 
     - name: Install tools
       uses: ./actions/.github/actions/install-common-tools
@@ -131,13 +108,6 @@ jobs:
         tofu workspace create ${{ inputs.terraformWorkspace }} || true
         tofu init
 
-    - name: debug
-      run: |
-        ls -lhsa ./../artifacts/main
-        echo "DEPOIS"
-        ls -lhsa ./../artifacts/
-        echo "AGORA"
-        stat ./../artifacts/main
     - name: Terraform ${{ inputs.terraformAction }}
       if: ${{ inputs.runTerraformAction }}
       id: plan_or_apply
