@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.1](https://github.com/dnlopes/github-workflows/compare/v1.5.0...v1.5.1) (2024-07-15)
+
+
+### Bug Fixes
+
+* use the correct name on the PR comment workspace ([8fd6b9c](https://github.com/dnlopes/github-workflows/commit/8fd6b9c3fbc6c51c0fe6b8c901bd78a64e183ff9))
+
 ## [1.5.0](https://github.com/dnlopes/github-workflows/compare/v1.4.0...v1.5.0) (2024-07-15)
 
 
