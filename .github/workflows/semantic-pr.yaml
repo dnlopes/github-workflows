@@ -1,4 +1,3 @@
-name: Semantic PR
 on:
   workflow_call:
   pull_request:
@@ -6,7 +5,7 @@ on:
 
 jobs:
   pr_title:
-    name: Title
+    name: Check title
     runs-on: ubuntu-latest
     steps:
     - uses: amannn/action-semantic-pull-request@v5
@@ -34,7 +33,7 @@ jobs:
           bot
 
   labels:
-    name: Labels
+    name: Forbidden labels
     runs-on: ubuntu-latest
     steps:
     - uses: mheap/github-action-required-labels@v5

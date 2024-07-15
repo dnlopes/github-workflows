@@ -1,5 +1,3 @@
-name: Golang
-
 on:
   workflow_call:
     inputs:
@@ -29,7 +27,7 @@ permissions:
 
 jobs:
   golang:
-    name: Build
+    name: Build and test
     runs-on: ubuntu-latest
     defaults:
       run:

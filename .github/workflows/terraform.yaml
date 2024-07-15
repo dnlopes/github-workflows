@@ -1,7 +1,3 @@
-name: Terraform
-
-# TODO: support Security scan
-
 on:
   workflow_call:
     inputs:
@@ -61,7 +57,7 @@ permissions:
 
 jobs:
   terraform:
-    name: Terraform
+    name: Run (${{ inputs.runTerraformAction }})
     runs-on: ubuntu-latest
     defaults:
       run:
