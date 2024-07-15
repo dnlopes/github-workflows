@@ -57,7 +57,7 @@ permissions:
 
 jobs:
   terraform:
-    name: Run (${{ inputs.runTerraformAction }})
+    name: Run (${{ inputs.terraformAction }})
     runs-on: ubuntu-latest
     defaults:
       run:
