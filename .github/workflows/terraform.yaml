@@ -111,6 +111,7 @@ jobs:
       with:
         role-to-assume: ${{ inputs.awsRoleArn }}
         aws-region: eu-west-1
+        role-session-name: ${{ inputs.terraformWorkspace }}
 
     # now init with backend, to prepare the plan step
     - name: Terraform init (backend=true)
