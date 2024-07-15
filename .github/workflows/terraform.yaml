@@ -130,7 +130,7 @@ jobs:
       if: always() && github.event_name == 'pull_request' && inputs.addPullRequestComments && (steps.fmt.outcome == 'success' || steps.fmt.outcome == 'failure')
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        TF_WORKSPACE: ${{ inputs.terraformProjectDir }}
+        TF_WORKSPACE: ${{ inputs.terraformWorkspace }}
         EXPAND_SUMMARY_DETAILS: false
       with:
         commenter_type: fmt
@@ -142,7 +142,7 @@ jobs:
       if: always() && github.event_name == 'pull_request' && inputs.addPullRequestComments && (steps.validate.outcome == 'success' || steps.validate.outcome == 'failure')
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        TF_WORKSPACE: ${{ inputs.terraformProjectDir }}
+        TF_WORKSPACE: ${{ inputs.terraformWorkspace }}
         EXPAND_SUMMARY_DETAILS: false
       with:
         commenter_type: validate
@@ -154,7 +154,7 @@ jobs:
       if: always() && github.event_name == 'pull_request' && inputs.addPullRequestComments && (steps.init_backend_true.outcome == 'success' || steps.init_backend_true.outcome == 'failure')
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        TF_WORKSPACE: ${{ inputs.terraformProjectDir }}
+        TF_WORKSPACE: ${{ inputs.terraformWorkspace }}
         EXPAND_SUMMARY_DETAILS: false
       with:
         commenter_type: init
@@ -166,7 +166,7 @@ jobs:
       if: always() && github.event_name == 'pull_request' && inputs.addPullRequestComments && (steps.plan_or_apply.outcome == 'success' || steps.plan_or_apply.outcome == 'failure')
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        TF_WORKSPACE: ${{ inputs.terraformProjectDir }}
+        TF_WORKSPACE: ${{ inputs.terraformWorkspace }}
         EXPAND_SUMMARY_DETAILS: false
       with:
         commenter_type: plan
