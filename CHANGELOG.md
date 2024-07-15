@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/dnlopes/github-workflows/compare/v1.3.0...v1.4.0) (2024-07-15)
+
+
+### Features
+
+* trigger build ([4d0970c](https://github.com/dnlopes/github-workflows/commit/4d0970c19a373ece6e7d107d9ac51e221025c3be))
+
 ## [1.3.0](https://github.com/dnlopes/github-workflows/compare/v1.2.0...v1.3.0) (2024-07-14)
 
 
