@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.1](https://github.com/dnlopes/github-workflows/compare/v1.6.0...v1.6.1) (2024-07-15)
+
+
+### Bug Fixes
+
+* add auto-approve to apply runs ([3dc1e43](https://github.com/dnlopes/github-workflows/commit/3dc1e432196799ce30199fe0b1bf83e1afd2abf9))
+
 ## [1.6.0](https://github.com/dnlopes/github-workflows/compare/v1.5.1...v1.6.0) (2024-07-15)
 
 
