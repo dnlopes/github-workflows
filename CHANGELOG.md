@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.1](https://github.com/dnlopes/github-workflows/compare/v1.7.0...v1.7.1) (2024-07-15)
+
+
+### Bug Fixes
+
+* typo on job name ([2e46fda](https://github.com/dnlopes/github-workflows/commit/2e46fdaa3eb3ed86a363ad93423466b8424ead2f))
+
 ## [1.7.0](https://github.com/dnlopes/github-workflows/compare/v1.6.1...v1.7.0) (2024-07-15)
 
 
