@@ -5,7 +5,11 @@ inputs:
   terraformVersion:
     description: Terraform version to install
     required: false
-    default: "1.6.0"
+    default: "1.9.2"
+  openTofuVersion:
+    description: OpenTofu version to install
+    required: false
+    default: "1.7.3"
   goVersion:
     description: Terraform version to install
     required: false
@@ -26,7 +30,12 @@ runs:
   - name: Install OpenTofu
     uses: opentofu/setup-opentofu@v1
     with:
-      tofu_version: ${{ inputs.terraformVersion }}
+      tofu_version: ${{ inputs.openTofuVersion }}
+
+  - name: Install Terraform
+    uses: hashicorp/setup-terraform@v3
+    with:
+      terraform_version: ${{ inputs.terraformVersion }}
 
   - name: Install TFLint
     uses: terraform-linters/setup-tflint@v4

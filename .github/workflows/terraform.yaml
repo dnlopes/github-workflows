@@ -17,18 +17,18 @@ on:
         description: whether or not to run Terraform plan/apply/destroy
       awsRoleArn:
         required: false
-        description: the IAM role ARN to be assumed when running OpenTofu operations
+        description: the IAM role ARN to be assumed when running OpenTofu/Terraform operations
         type: string
         default: ""
       terraformWorkspace:
         required: false
         default: ""
-        description: the name of the OpenTofu workspace
+        description: the name of the OpenTofu/Terraform workspace
         type: string
       terraformAction:
         required: false
         default: plan
-        description: the type of action to execute in OpenTofu (plan/apply/destroy)
+        description: the type of action to execute in OpenTofu/Terraform (plan/apply/destroy)
         type: string
       terraformVarsFile: # TODO: support empty vars file
         required: true
@@ -39,9 +39,20 @@ on:
         type: boolean
         default: true
       terraformVersion:
-        required: false
+        description: Terraform version to install
         type: string
-        default: 1.6.0
+        required: false
+        default: "1.9.2"
+      openTofuVersion:
+        type: string
+        description: OpenTofu version to install
+        required: false
+        default: "1.7.3"
+      binary:
+        type: string
+        description: the binary to use for the OpenTofu/Terraform operations (OpenTofu/Terraform)
+        required: false
+        default: terraform
 
 permissions:
   pull-requests: write
@@ -78,20 +89,21 @@ jobs:
       uses: ./actions/.github/actions/install-common-tools
       with:
         terraformVersion: ${{ inputs.terraformVersion }}
+        openTofuVersion: ${{ inputs.openTofuVersion }}
 
     # first init without backend, so we can run validation on it without needing credentials
     - name: Init (backend=false)
       id: init_backend_false
-      run: tofu init -backend=false
+      run: ${{ inputs.binary }} init -backend=false
 
     - name: Format
       id: fmt
       continue-on-error: true
-      run: tofu fmt -recursive -diff -check
+      run: ${{ inputs.binary }} fmt -recursive -diff -check
 
     - name: Validate
       id: validate
-      run: tofu validate
+      run: ${{ inputs.binary }} validate
 
     - name: Configure AWS Credentials
       if: ${{ inputs.runTerraformAction }}
@@ -105,13 +117,13 @@ jobs:
       if: ${{ inputs.runTerraformAction }}
       id: init_backend_true
       run: |
-        tofu workspace create ${{ inputs.terraformWorkspace }} || true
-        tofu init
+        ${{ inputs.binary }} workspace create ${{ inputs.terraformWorkspace }} || true
+        ${{ inputs.binary }} init
 
     - name: Terraform ${{ inputs.terraformAction }}
       if: ${{ inputs.runTerraformAction }}
       id: plan_or_apply
-      run: tofu ${{ inputs.terraformAction }}
+      run: ${{ inputs.binary }} ${{ inputs.terraformAction }}
 
     - name: Comment PR (fmt)
       uses: GetTerminus/terraform-pr-commenter@v3
