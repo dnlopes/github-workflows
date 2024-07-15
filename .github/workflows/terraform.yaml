@@ -114,7 +114,7 @@ jobs:
       run: tofu ${{ inputs.terraformAction }}
 
     - name: Comment PR (fmt)
-      uses: robburger/terraform-pr-commenter@v1.5.0
+      uses: GetTerminus/terraform-pr-commenter@v3
       if: always() && github.event_name == 'pull_request' && inputs.addPullRequestComments && (steps.fmt.outcome == 'success' || steps.fmt.outcome == 'failure')
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -126,7 +126,7 @@ jobs:
         commenter_exitcode: ${{ steps.fmt.outputs.exitcode }}
 
     - name: Comment PR (validate)
-      uses: robburger/terraform-pr-commenter@v1.5.0
+      uses: GetTerminus/terraform-pr-commenter@v3
       if: always() && github.event_name == 'pull_request' && inputs.addPullRequestComments && (steps.validate.outcome == 'success' || steps.validate.outcome == 'failure')
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -138,7 +138,7 @@ jobs:
         commenter_exitcode: ${{ steps.validate.outputs.exitcode }}
 
     - name: Comment PR (init)
-      uses: robburger/terraform-pr-commenter@v1.5.0
+      uses: GetTerminus/terraform-pr-commenter@v3
       if: always() && github.event_name == 'pull_request' && inputs.addPullRequestComments && (steps.init_backend_true.outcome == 'success' || steps.init_backend_true.outcome == 'failure')
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -150,7 +150,7 @@ jobs:
         commenter_exitcode: ${{ steps.init_backend_true.outputs.exitcode }}
 
     - name: Comment PR (plan)
-      uses: robburger/terraform-pr-commenter@v1.5.0
+      uses: GetTerminus/terraform-pr-commenter@v3
       if: always() && github.event_name == 'pull_request' && inputs.addPullRequestComments && (steps.plan_or_apply.outcome == 'success' || steps.plan_or_apply.outcome == 'failure')
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
