@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/dnlopes/github-workflows/compare/v1.5.1...v1.6.0) (2024-07-15)
+
+
+### Features
+
+* add explicit role-session-name on AWS OIDC login ([40f556a](https://github.com/dnlopes/github-workflows/commit/40f556ad11f8d885414beca376bb737c19d8b226))
+
 ## [1.5.1](https://github.com/dnlopes/github-workflows/compare/v1.5.0...v1.5.1) (2024-07-15)
 
 
