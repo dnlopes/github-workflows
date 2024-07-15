@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0](https://github.com/dnlopes/github-workflows/compare/v1.4.0...v1.5.0) (2024-07-15)
+
+
+### Features
+
+* add support to both OpenTofu and Terraform at the same time ([ec153c9](https://github.com/dnlopes/github-workflows/commit/ec153c9974862c4cde3595a044a8fc7443a57f99))
+
 ## [1.4.0](https://github.com/dnlopes/github-workflows/compare/v1.3.0...v1.4.0) (2024-07-15)
 
 
