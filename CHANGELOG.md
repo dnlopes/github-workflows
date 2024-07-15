@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.7.0](https://github.com/dnlopes/github-workflows/compare/v1.6.1...v1.7.0) (2024-07-15)
+
+
+### Features
+
+* better naming conventions ([7291693](https://github.com/dnlopes/github-workflows/commit/7291693e9d03250764dacb77bd4ddb5123f809d6))
+* improvements on reusable workflows ([e54dd0f](https://github.com/dnlopes/github-workflows/commit/e54dd0f376eb4b3b011b85254ec97c024ca1f253))
+
 ## [1.6.1](https://github.com/dnlopes/github-workflows/compare/v1.6.0...v1.6.1) (2024-07-15)
 
 
