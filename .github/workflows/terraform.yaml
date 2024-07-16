@@ -114,8 +114,8 @@ jobs:
       if: ${{ inputs.runTerraformAction }}
       id: init_backend_true
       run: |
-        ${{ inputs.binary }} workspace new ${{ inputs.terraformWorkspace }} || true
         ${{ inputs.binary }} init
+        ${{ inputs.binary }} workspace new ${{ inputs.terraformWorkspace }} || true
 
     - name: Terraform ${{ inputs.terraformAction }}
       if: ${{ inputs.runTerraformAction }}
