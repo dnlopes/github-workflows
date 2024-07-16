@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.8.0](https://github.com/dnlopes/github-workflows/compare/v1.7.1...v1.8.0) (2024-07-16)
+
+
+### Features
+
+* remove unneeded file ([3213379](https://github.com/dnlopes/github-workflows/commit/32133799f37c4ba07e8832a589d720a268ef6eb5))
+
+
+### Bug Fixes
+
+* workspace first bootstrap ([120b081](https://github.com/dnlopes/github-workflows/commit/120b0812808ca9e7a605e6166e7b40079ef6d5c0))
+
 ## [1.7.1](https://github.com/dnlopes/github-workflows/compare/v1.7.0...v1.7.1) (2024-07-15)
 
 
