@@ -49,21 +49,20 @@ on:
         description: the binary to use for the OpenTofu/Terraform operations (OpenTofu/Terraform)
         required: false
         default: terraform
-      linterLevel:
-        type: string
-        description: the level of linting to apply to the Terraform code
-        required: false
-        default: warning
-      linterFilterMode:
-        type: string
-        description: the filter mode to apply to the Terraform linter
-        required: false
-        default: nofilter
-      linterFailOnError:
+      runSecurityScan:
         type: boolean
         description: whether or not to fail the workflow if the linter fails
         required: false
-        default: false
+        default: true
+      failOnSecurityScanFailure:
+        type: boolean
+        description: whether or not to fail the workflow if the security scan fails
+        required: false
+        default: true
+      severityThreshold:
+        required: false
+        type: string
+        default: high
 
 permissions:
   pull-requests: write
@@ -115,16 +114,6 @@ jobs:
     - name: Validate
       id: validate
       run: ${{ inputs.binary }} validate
-
-    - name: Lint
-      uses: reviewdog/action-tflint@v1
-      with:
-        github_token: ${{ secrets.github_token }}
-        level: ${{ inputs.linterLevel }}
-        reporter: github-pr-review
-        filter_mode: ${{ inputs.linterFilterMode }}
-        fail_on_error: ${{ inputs.linterFailOnError }}
-        working_directory: ${{ inputs.terraformProjectDir }}
 
     - name: Configure AWS Credentials
       if: ${{ inputs.runTerraformAction }}
@@ -193,3 +182,27 @@ jobs:
         commenter_type: plan
         commenter_input: ${{ format('{0}{1}', steps.plan_or_apply.outputs.stdout, steps.plan_or_apply.outputs.stderr) }}
         commenter_exitcode: ${{ steps.plan_or_apply.outputs.exitcode }}
+
+  snyk:
+    name: Snyk
+    if: ${{ inputs.runSecurityScan }}
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Scan
+      id: snyk-scan
+      continue-on-error: true
+      uses: snyk/actions/iac@master
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        args: --report --severity-threshold=${{ inputs.severityThreshold }}
+
+    # Possible values: success, failure, cancelled, or skipped
+    - name: Fail
+      if: ${{ steps.snyk-scan.outcome == 'failure' && inputs.failOnSecurityScanFailure }}
+      run: |
+        echo "Snyk scan failed (step outcome=${{ steps.snyk-scan.outcome }})"
+        exit 1
