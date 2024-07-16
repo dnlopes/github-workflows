@@ -199,12 +199,10 @@ jobs:
 
     - name: Scan
       id: snyk-scan
+      uses: snyk/actions/node@master
       continue-on-error: true
-      uses: snyk/actions/iac@master
       env:
         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-      with:
-        args: --report --severity-threshold=${{ inputs.severityThreshold }}
 
     # Possible values: success, failure, cancelled, or skipped
     - name: Fail
