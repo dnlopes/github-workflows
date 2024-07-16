@@ -184,6 +184,9 @@ jobs:
         commenter_exitcode: ${{ steps.plan_or_apply.outputs.exitcode }}
 
   snyk:
+    concurrency:
+      group: ${{ github.repository }}-${{ github.workflow }}-${{ github.ref }}-snyk
+      cancel-in-progress: true
     name: Snyk
     if: ${{ inputs.runSecurityScan }}
     runs-on: ubuntu-latest
