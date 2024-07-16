@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.2](https://github.com/dnlopes/github-workflows/compare/v1.8.1...v1.8.2) (2024-07-16)
+
+
+### Bug Fixes
+
+* typo on Workspace selection ([f1ef216](https://github.com/dnlopes/github-workflows/commit/f1ef216d7476cf18ff0a8d178825ef7e6a1b182c))
+
 ## [1.8.1](https://github.com/dnlopes/github-workflows/compare/v1.8.0...v1.8.1) (2024-07-16)
 
 
