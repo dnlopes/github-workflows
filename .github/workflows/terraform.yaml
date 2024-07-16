@@ -71,6 +71,9 @@ permissions:
 
 jobs:
   terraform:
+    concurrency:
+      group: ${{ github.repository }}-${{ github.workflow }}-${{ github.ref }}-terraform
+      cancel-in-progress: true
     name: Run (${{ inputs.terraformAction }})
     runs-on: ubuntu-latest
     defaults:

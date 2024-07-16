@@ -3,6 +3,10 @@ on:
   pull_request:
     types: [opened, reopened, edited, labeled, unlabeled, synchronize]
 
+concurrency:
+  group: ${{ github.repository }}-${{ github.workflow }}-${{ github.ref }}-semantic
+  cancel-in-progress: true
+
 jobs:
   pr_title:
     name: Check title
