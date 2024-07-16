@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.4](https://github.com/dnlopes/github-workflows/compare/v1.8.3...v1.8.4) (2024-07-16)
+
+
+### Bug Fixes
+
+* remove Workspace selection step ([31b3240](https://github.com/dnlopes/github-workflows/commit/31b32402b11235d982dfaadaa6d1deed5b2d93ca))
+
 ## [1.8.3](https://github.com/dnlopes/github-workflows/compare/v1.8.2...v1.8.3) (2024-07-16)
 
 
