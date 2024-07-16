@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.8.1](https://github.com/dnlopes/github-workflows/compare/v1.8.0...v1.8.1) (2024-07-16)
+
+
+### Bug Fixes
+
+* init before workspace creation ([56287a8](https://github.com/dnlopes/github-workflows/commit/56287a8c669da12ef6507b21c81d0fad11ab66b8))
+* init before workspace creation ([cf4c10e](https://github.com/dnlopes/github-workflows/commit/cf4c10e911da2d777079650ac3dc197f8596d9fa))
+
 ## [1.8.0](https://github.com/dnlopes/github-workflows/compare/v1.7.1...v1.8.0) (2024-07-16)
 
 
