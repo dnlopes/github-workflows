@@ -49,6 +49,21 @@ on:
         description: the binary to use for the OpenTofu/Terraform operations (OpenTofu/Terraform)
         required: false
         default: terraform
+      linterLevel:
+        type: string
+        description: the level of linting to apply to the Terraform code
+        required: false
+        default: warning
+      linterFilterMode:
+        type: string
+        description: the filter mode to apply to the Terraform linter
+        required: false
+        default: nofilter
+      linterFailOnError:
+        type: boolean
+        description: whether or not to fail the workflow if the linter fails
+        required: false
+        default: false
 
 permissions:
   pull-requests: write
@@ -100,6 +115,16 @@ jobs:
     - name: Validate
       id: validate
       run: ${{ inputs.binary }} validate
+
+    - name: Lint
+      uses: reviewdog/action-tflint@v1
+      with:
+        github_token: ${{ secrets.github_token }}
+        level: ${{ inputs.linterLevel }}
+        reporter: github-pr-review
+        filter_mode: ${{ inputs.linterFilterMode }}
+        fail_on_error: ${{ inputs.linterFailOnError }}
+        working_directory: ${{ inputs.terraformProjectDir }}
 
     - name: Configure AWS Credentials
       if: ${{ inputs.runTerraformAction }}
