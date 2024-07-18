@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.0](https://github.com/dnlopes/github-workflows/compare/v1.8.4...v1.9.0) (2024-07-18)
+
+
+### Features
+
+* add status checks for Semantic job ([16f270a](https://github.com/dnlopes/github-workflows/commit/16f270a83960f0a7a06a10dd27c3fef3a90735ec))
+
 ## [1.8.4](https://github.com/dnlopes/github-workflows/compare/v1.8.3...v1.8.4) (2024-07-16)
 
 
