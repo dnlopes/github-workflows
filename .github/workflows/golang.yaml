@@ -19,6 +19,11 @@ on:
         required: false
         type: boolean
         default: true
+      ignoreErrors:
+        required: false
+        type: boolean
+        default: false
+        description: whether or not to ignore errors
 
 permissions:
   contents: read # Required: allow read access to the content for analysis.
@@ -28,6 +33,9 @@ permissions:
 concurrency:
   group: ${{ github.repository }}-${{ github.workflow }}-${{ github.ref }}-golang-checks
   cancel-in-progress: true
+
+env:
+  CHECK_NAME: Golang checks
 
 jobs:
   golang:
@@ -40,6 +48,15 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+
+    - name: Set status pending
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" \
+          /repos/${{ github.repository }}/statuses/${{ github.event.pull_request.head.sha }} \
+          -f "state=pending" -f "description=Golang checks are running" \
+          -f "context=${{ env.CHECK_NAME }}"
 
     - name: Checkout reusable-workflows repository
       uses: actions/checkout@v4
@@ -76,3 +93,23 @@ jobs:
         path: TestResults-${{ inputs.goVersion }}.json
         retention-days: 1
         overwrite: true
+
+    - name: Set status success
+      if: ${{ success() || inputs.IgnoreErrors == true }}
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" \
+          /repos/${{ github.repository }}/statuses/${{ github.event.pull_request.head.sha }} \
+          -f "state=success" -f "description=Golang checks were successful" \
+          -f "context=${{ env.CHECK_NAME }}"
+
+    - name: Set status failure
+      if: ${{ failure() && inputs.IgnoreErrors == false }}
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" \
+          /repos/${{ github.repository }}/statuses/${{ github.event.pull_request.head.sha }} \
+          -f "state=failure" -f "description=Golang checks failed validations!" \
+          -f "context=${{ env.CHECK_NAME }}"
