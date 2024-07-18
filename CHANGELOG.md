@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.1](https://github.com/dnlopes/github-workflows/compare/v1.11.0...v1.11.1) (2024-07-18)
+
+
+### Bug Fixes
+
+* concurrency ([b54b823](https://github.com/dnlopes/github-workflows/commit/b54b823b768019bab53885567cb7bbab81fe420a))
+
 ## [1.11.0](https://github.com/dnlopes/github-workflows/compare/v1.10.0...v1.11.0) (2024-07-18)
 
 
