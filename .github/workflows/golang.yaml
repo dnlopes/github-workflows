@@ -25,6 +25,10 @@ permissions:
   pull-requests: read # Optional: allow read access to pull request. Use with `only-new-issues` option.
   checks: write # Optional: allow write access to checks to allow the action to annotate code in the PR.
 
+concurrency:
+  group: ${{ github.repository }}-${{ github.workflow }}-${{ github.ref }}-${{ inputs.terraformProjectDir }}-golang-checks
+  cancel-in-progress: true
+
 jobs:
   golang:
     name: Build and test

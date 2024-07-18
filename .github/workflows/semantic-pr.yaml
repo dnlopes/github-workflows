@@ -1,13 +1,41 @@
 on:
   workflow_call:
+    inputs:
+      ignoreErrors:
+        required: false
+        type: boolean
+        default: false
+        description: whether or not to ignore errors
+
   pull_request:
     types: [opened, reopened, edited, labeled, unlabeled, synchronize]
 
+concurrency:
+  group: ${{ github.repository }}-${{ github.workflow }}-${{ github.ref }}-pr-semantic
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
+  statuses: write # needed for setting the status of the PR
+
+env:
+  CHECK_NAME: Semantic PR
+
 jobs:
   pr_title:
-    name: Check title
+    name: Checks
     runs-on: ubuntu-latest
     steps:
+    - name: Set status pending
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" \
+          /repos/${{ github.repository }}/statuses/${{ github.event.pull_request.head.sha }} \
+          -f "state=pending" -f "description=PR semantics checks are running" \
+          -f "context=${{ env.CHECK_NAME }}"
+
     - uses: amannn/action-semantic-pull-request@v5
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -32,13 +60,29 @@ jobs:
         ignoreLabels: |
           bot
 
-  labels:
-    name: Forbidden labels
-    runs-on: ubuntu-latest
-    steps:
     - uses: mheap/github-action-required-labels@v5
       name: Check forbidden labels
       with:
         mode: exactly
         count: 0
         labels: "do-not-merge, WIP, do not merge"
+
+    - name: Set status success
+      if: ${{ success() || inputs.IgnoreErrors == true }}
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" \
+          /repos/${{ github.repository }}/statuses/${{ github.event.pull_request.head.sha }} \
+          -f "state=success" -f "description=PR semantics checks were successful" \
+          -f "context=${{ env.CHECK_NAME }}"
+
+    - name: Set status failure
+      if: ${{ failure() && inputs.IgnoreErrors == false }}
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" \
+          /repos/${{ github.repository }}/statuses/${{ github.event.pull_request.head.sha }} \
+          -f "state=failure" -f "description=PR semantics failed validations!" \
+          -f "context=${{ env.CHECK_NAME }}"

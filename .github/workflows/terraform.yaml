@@ -54,6 +54,11 @@ permissions:
   pull-requests: write
   contents: read
   id-token: write # needed for OIDC login in AWS
+  statuses: write # needed for setting the status of the PR
+
+concurrency:
+  group: ${{ github.repository }}-${{ github.workflow }}-${{ github.ref }}-${{ inputs.terraformProjectDir }}-tf-checks
+  cancel-in-progress: true
 
 jobs:
   terraform:
