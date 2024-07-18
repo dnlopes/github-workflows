@@ -49,21 +49,28 @@ on:
         description: the binary to use for the OpenTofu/Terraform operations (OpenTofu/Terraform)
         required: false
         default: terraform
-
-permissions:
-  pull-requests: write
-  contents: read
-  id-token: write # needed for OIDC login in AWS
-  statuses: write # needed for setting the status of the PR
+      ignoreErrors:
+        required: false
+        type: boolean
+        default: false
+        description: whether or not to ignore errors
 
 concurrency:
-  group: ${{ github.repository }}-${{ github.workflow }}-${{ github.ref }}-${{ inputs.terraformProjectDir }}-tf-checks
+  group: ${{ github.repository }}-${{ github.workflow }}-${{ github.ref }}-tf-checks
   cancel-in-progress: true
+
+env:
+  CHECK_NAME: Terraform checks
 
 jobs:
   terraform:
     name: Run (${{ inputs.terraformAction }})
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+      id-token: write # needed for OIDC login in AWS
+      statuses: write # needed for setting the status of the PR
     defaults:
       run:
         working-directory: ${{ inputs.terraformProjectDir }}
@@ -77,6 +84,15 @@ jobs:
       TF_WORKSPACE: ${{ inputs.terraformWorkspace }}
 
     steps:
+    - name: Set status pending
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" \
+          /repos/${{ github.repository }}/statuses/${{ github.event.pull_request.head.sha }} \
+          -f "state=pending" -f "description=Terraform checks are running" \
+          -f "context=${{ env.CHECK_NAME }}"
+
     - name: Checkout code
       uses: actions/checkout@v4
 
@@ -173,3 +189,23 @@ jobs:
         commenter_type: plan
         commenter_input: ${{ format('{0}{1}', steps.plan_or_apply.outputs.stdout, steps.plan_or_apply.outputs.stderr) }}
         commenter_exitcode: ${{ steps.plan_or_apply.outputs.exitcode }}
+
+    - name: Set status success
+      if: ${{ success() || inputs.IgnoreErrors == true }}
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" \
+          /repos/${{ github.repository }}/statuses/${{ github.event.pull_request.head.sha }} \
+          -f "state=success" -f "description=Terraform checks were successful" \
+          -f "context=${{ env.CHECK_NAME }}"
+
+    - name: Set status failure
+      if: ${{ failure() && inputs.IgnoreErrors == false }}
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" \
+          /repos/${{ github.repository }}/statuses/${{ github.event.pull_request.head.sha }} \
+          -f "state=failure" -f "description=Terraform checks failed validations!" \
+          -f "context=${{ env.CHECK_NAME }}"
