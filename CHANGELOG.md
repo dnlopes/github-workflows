@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.0](https://github.com/dnlopes/github-workflows/compare/v1.10.0...v1.11.0) (2024-07-18)
+
+
+### Features
+
+* more improvements ([518c681](https://github.com/dnlopes/github-workflows/commit/518c6811e363d6517cb560f8fdc512b787a760b1))
+
 ## [1.10.0](https://github.com/dnlopes/github-workflows/compare/v1.9.0...v1.10.0) (2024-07-18)
 
 
