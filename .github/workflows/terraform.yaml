@@ -56,7 +56,7 @@ on:
         description: whether or not to ignore errors
 
 concurrency:
-  group: ${{ github.repository }}-${{ github.workflow }}-${{ github.ref }}-${{ inputs.terraformProjectDir }}-tf-checks
+  group: ${{ github.repository }}-${{ github.workflow }}-${{ github.ref }}-${{ inputs.terraformWorkspace }}-${{ inputs.terraformProjectDir }}-tf-checks
   cancel-in-progress: true
 
 env:

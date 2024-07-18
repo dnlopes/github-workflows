@@ -25,11 +25,6 @@ on:
         default: false
         description: whether or not to ignore errors
 
-permissions:
-  contents: read # Required: allow read access to the content for analysis.
-  pull-requests: read # Optional: allow read access to pull request. Use with `only-new-issues` option.
-  checks: write # Optional: allow write access to checks to allow the action to annotate code in the PR.
-
 concurrency:
   group: ${{ github.repository }}-${{ github.workflow }}-${{ github.ref }}-golang-checks
   cancel-in-progress: true
@@ -41,6 +36,11 @@ jobs:
   golang:
     name: Build and test
     runs-on: ubuntu-latest
+    permissions:
+      contents: read # Required: allow read access to the content for analysis.
+      pull-requests: read # Optional: allow read access to pull request. Use with `only-new-issues` option.
+      checks: write # Optional: allow write access to checks to allow the action to annotate code in the PR.
+      statuses: write # needed for setting the status of the PR
     defaults:
       run:
         working-directory: ${{ inputs.golangProjectDir }}
