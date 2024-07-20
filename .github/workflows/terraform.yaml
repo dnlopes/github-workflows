@@ -6,7 +6,7 @@ on:
         type: string
         default: .
         description: path of the Terraform project, relative to the root of the repository
-      runTerraformAction:
+      runPlanOrApply:
         required: false
         type: boolean
         default: true
@@ -56,11 +56,8 @@ on:
         description: whether or not to ignore errors
 
 concurrency:
-  group: ${{ github.repository }}-${{ github.workflow }}-${{ github.ref }}-${{ inputs.terraformWorkspace }}-${{ inputs.terraformProjectDir }}-tf-checks
+  group: terraform-${{ github.repository }}-${{ github.workflow }}-${{ github.ref }}-${{ inputs.terraformWorkspace }}
   cancel-in-progress: true
-
-env:
-  CHECK_NAME: Terraform checks
 
 jobs:
   terraform:
@@ -82,130 +79,144 @@ jobs:
       TF_CLI_ARGS_apply: -var-file=${{ inputs.terraformVarsFile }} -auto-approve
       TOFU_WORKSPACE: ${{ inputs.terraformWorkspace }}
       TF_WORKSPACE: ${{ inputs.terraformWorkspace }}
+      CHECK_NAME: Terraform checks
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set status pending
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" \
-          /repos/${{ github.repository }}/statuses/${{ github.event.pull_request.head.sha }} \
-          -f "state=pending" -f "description=Terraform checks are running" \
-          -f "context=${{ env.CHECK_NAME }}"
+      - name: Set pending status
+        if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" \
+            /repos/${{ github.repository }}/statuses/${{ github.event.pull_request.head.sha }} \
+            -f "state=pending" -f "description=validations running" \
+            -f "context=${{ env.CHECK_NAME }}"
 
-    - name: Checkout reusable-workflows repository
-      uses: actions/checkout@v4
-      with:
-        repository: dnlopes/github-workflows
-        path: actions
+      - name: Checkout reusable-workflows repository
+        uses: actions/checkout@v4
+        with:
+          repository: dnlopes/github-workflows
+          path: actions
 
-    - name: Install tools
-      uses: ./actions/.github/actions/install-common-tools
-      with:
-        terraformVersion: ${{ inputs.terraformVersion }}
-        openTofuVersion: ${{ inputs.openTofuVersion }}
+      - name: Install tools
+        uses: ./actions/.github/actions/install-common-tools
+        with:
+          terraformVersion: ${{ inputs.terraformVersion }}
+          openTofuVersion: ${{ inputs.openTofuVersion }}
 
-    # first init without backend, so we can run validation on it without needing credentials
-    - name: Init (backend=false)
-      id: init_backend_false
-      run: ${{ inputs.binary }} init -backend=false
+      - name: Format
+        id: fmt
+        run: ${{ inputs.binary }} fmt -recursive -diff -check
 
-    - name: Format
-      id: fmt
-      continue-on-error: true
-      run: ${{ inputs.binary }} fmt -recursive -diff -check
+      - name: Init
+        id: init
+        run: |
+          if [ ${{ inputs.runPlanOrApply }} == true ]; then
+            terraform init -upgrade | tee ${GITHUB_WORKSPACE}/init.out
+          else
+            terraform init -backend=false | tee ${GITHUB_WORKSPACE}/init.out
+          fi
 
-    - name: Validate
-      id: validate
-      run: ${{ inputs.binary }} validate
+      - name: Validate
+        id: validate
+        run: ${{ inputs.binary }} validate
 
-    - name: Configure AWS Credentials
-      if: ${{ inputs.runTerraformAction }}
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
-        role-to-assume: ${{ inputs.awsRoleArn }}
-        aws-region: eu-west-1
-        role-session-name: ${{ inputs.terraformWorkspace }}
+      - name: .terraform.lock.hcl updated?
+        id: verify_lockfile
+        run: git --no-pager diff --exit-code .terraform.lock.hcl
 
-    # now init with backend, to prepare the plan step
-    - name: Terraform init (backend=true)
-      if: ${{ inputs.runTerraformAction }}
-      id: init_backend_true
-      run: |
-        ${{ inputs.binary }} init
+      - name: Configure AWS Credentials
+        if: ${{ inputs.runPlanOrApply }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ inputs.awsRoleArn }}
+          aws-region: eu-west-1
+          role-session-name: ${{ inputs.terraformWorkspace }}
 
-    - name: Terraform ${{ inputs.terraformAction }}
-      if: ${{ inputs.runTerraformAction }}
-      id: plan_or_apply
-      run: ${{ inputs.binary }} ${{ inputs.terraformAction }}
+      - name: ${{ inputs.terraformAction }}
+        if: ${{ inputs.runPlanOrApply }}
+        id: plan_or_apply
+        run: ${{ inputs.binary }} ${{ inputs.terraformAction }}
 
-    - name: Comment PR (fmt)
-      uses: GetTerminus/terraform-pr-commenter@v3
-      if: always() && github.event_name == 'pull_request' && inputs.addPullRequestComments && (steps.fmt.outcome == 'success' || steps.fmt.outcome == 'failure')
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        TF_WORKSPACE: ${{ inputs.terraformWorkspace }}
-        EXPAND_SUMMARY_DETAILS: false
-      with:
-        commenter_type: fmt
-        commenter_input: ${{ format('{0}{1}', steps.fmt.outputs.stdout, steps.fmt.outputs.stderr) }}
-        commenter_exitcode: ${{ steps.fmt.outputs.exitcode }}
+      - name: Comment PR (fmt)
+        uses: GetTerminus/terraform-pr-commenter@v3
+        if: always() && github.event_name == 'pull_request' && inputs.addPullRequestComments && (steps.fmt.outcome == 'success' || steps.fmt.outcome == 'failure')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TF_WORKSPACE: ${{ inputs.terraformWorkspace }}
+          EXPAND_SUMMARY_DETAILS: false
+        with:
+          commenter_type: fmt
+          commenter_input: ${{ format('{0}{1}', steps.fmt.outputs.stdout, steps.fmt.outputs.stderr) }}
+          commenter_exitcode: ${{ steps.fmt.outputs.exitcode }}
 
-    - name: Comment PR (validate)
-      uses: GetTerminus/terraform-pr-commenter@v3
-      if: always() && github.event_name == 'pull_request' && inputs.addPullRequestComments && (steps.validate.outcome == 'success' || steps.validate.outcome == 'failure')
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        TF_WORKSPACE: ${{ inputs.terraformWorkspace }}
-        EXPAND_SUMMARY_DETAILS: false
-      with:
-        commenter_type: validate
-        commenter_input: ${{ format('{0}{1}', steps.validate.outputs.stdout, steps.validate.outputs.stderr) }}
-        commenter_exitcode: ${{ steps.validate.outputs.exitcode }}
+      - name: Comment PR (init)
+        uses: GetTerminus/terraform-pr-commenter@v3
+        if: always() && (github.event_name == 'pull_request' || github.event_name == 'pull_request_target') && inputs.addPullRequestComments && (steps.init.outcome == 'success' || steps.init.outcome == 'failure')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TF_WORKSPACE: ${{ inputs.terraformWorkspace }}
+          EXPAND_SUMMARY_DETAILS: false
+        with:
+          commenter_type: init
+          commenter_input: ${{ format('{0}{1}', steps.init.outputs.stdout, steps.init.outputs.stderr) }}
+          commenter_exitcode: ${{ steps.init.outputs.exitcode }}
 
-    - name: Comment PR (init)
-      uses: GetTerminus/terraform-pr-commenter@v3
-      if: always() && github.event_name == 'pull_request' && inputs.addPullRequestComments && (steps.init_backend_true.outcome == 'success' || steps.init_backend_true.outcome == 'failure')
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        TF_WORKSPACE: ${{ inputs.terraformWorkspace }}
-        EXPAND_SUMMARY_DETAILS: false
-      with:
-        commenter_type: init
-        commenter_input: ${{ format('{0}{1}', steps.init_backend_true.outputs.stdout, steps.init_backend_true.outputs.stderr) }}
-        commenter_exitcode: ${{ steps.init_backend_true.outputs.exitcode }}
+      - name: Comment PR (validate)
+        uses: GetTerminus/terraform-pr-commenter@v3
+        if: always() && (github.event_name == 'pull_request' || github.event_name == 'pull_request_target') && inputs.addPullRequestComments && (steps.validate.outcome == 'success' || steps.validate.outcome == 'failure')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TF_WORKSPACE: ${{ inputs.terraformWorkspace }}
+          EXPAND_SUMMARY_DETAILS: false
+        with:
+          commenter_type: validate
+          commenter_input: ${{ format('{0}{1}', steps.validate.outputs.stdout, steps.validate.outputs.stderr) }}
+          commenter_exitcode: ${{ steps.validate.outputs.exitcode }}
 
-    - name: Comment PR (plan)
-      uses: GetTerminus/terraform-pr-commenter@v3
-      if: always() && github.event_name == 'pull_request' && inputs.addPullRequestComments && (steps.plan_or_apply.outcome == 'success' || steps.plan_or_apply.outcome == 'failure')
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        TF_WORKSPACE: ${{ inputs.terraformWorkspace }}
-        EXPAND_SUMMARY_DETAILS: false
-      with:
-        commenter_type: plan
-        commenter_input: ${{ format('{0}{1}', steps.plan_or_apply.outputs.stdout, steps.plan_or_apply.outputs.stderr) }}
-        commenter_exitcode: ${{ steps.plan_or_apply.outputs.exitcode }}
+      - name: Comment PR (outdated lockfile)
+        if: always() && (github.event_name == 'pull_request' || github.event_name == 'pull_request_target') && inputs.addPullRequestComments && steps.verify_lockfile.outcome == 'failure'
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          mode: recreate
+          comment_tag: lockfile-up-to-date
+          create_if_not_exists: true
+          message: |
+            > [!CAUTION]  
+            > Terraform lockfile is not up to date!
 
-    - name: Set status success
-      if: ${{ success() || inputs.IgnoreErrors == true }}
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" \
-          /repos/${{ github.repository }}/statuses/${{ github.event.pull_request.head.sha }} \
-          -f "state=success" -f "description=Terraform checks were successful" \
-          -f "context=${{ env.CHECK_NAME }}"
+      - name: Comment PR (plan)
+        uses: GetTerminus/terraform-pr-commenter@v3
+        if: always() && (github.event_name == 'pull_request' || github.event_name == 'pull_request_target') && inputs.addPullRequestComments && (steps.plan_or_apply.outcome == 'success' || steps.plan_or_apply.outcome == 'failure')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TF_WORKSPACE: ${{ inputs.terraformWorkspace }}
+          EXPAND_SUMMARY_DETAILS: false
+        with:
+          commenter_type: plan
+          commenter_input: ${{ format('{0}{1}', steps.plan_or_apply.outputs.stdout, steps.plan_or_apply.outputs.stderr) }}
+          commenter_exitcode: ${{ steps.plan_or_apply.outputs.exitcode }}
 
-    - name: Set status failure
-      if: ${{ failure() && inputs.IgnoreErrors == false }}
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" \
-          /repos/${{ github.repository }}/statuses/${{ github.event.pull_request.head.sha }} \
-          -f "state=failure" -f "description=Terraform checks failed validations!" \
-          -f "context=${{ env.CHECK_NAME }}"
+      - name: Set status success
+        if: ${{ success() || inputs.IgnoreErrors == true }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" \
+            /repos/${{ github.repository }}/statuses/${{ github.event.pull_request.head.sha }} \
+            -f "state=success" -f "description=validations successful" \
+            -f "context=${{ env.CHECK_NAME }}"
+
+      - name: Set status failure
+        if: ${{ failure() && inputs.IgnoreErrors == false }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" \
+            /repos/${{ github.repository }}/statuses/${{ github.event.pull_request.head.sha }} \
+            -f "state=failure" -f "description=validations failed" \
+            -f "context=${{ env.CHECK_NAME }}"
