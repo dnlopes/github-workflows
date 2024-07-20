@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.3](https://github.com/dnlopes/github-workflows/compare/v1.12.2...v1.12.3) (2024-07-20)
+
+
+### Bug Fixes
+
+* skip status on non-PRs ([becabeb](https://github.com/dnlopes/github-workflows/commit/becabeb406453ddd8fddced5d44926f80a2bb58c))
+
 ## [1.12.2](https://github.com/dnlopes/github-workflows/compare/v1.12.1...v1.12.2) (2024-07-20)
 
 
