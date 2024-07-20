@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.1](https://github.com/dnlopes/github-workflows/compare/v1.12.0...v1.12.1) (2024-07-20)
+
+
+### Bug Fixes
+
+* move credentials setup before init ([c7c2bf2](https://github.com/dnlopes/github-workflows/commit/c7c2bf2731a8ae36811c0d5c7ac3af70a5fb1f30))
+
 ## [1.12.0](https://github.com/dnlopes/github-workflows/compare/v1.11.1...v1.12.0) (2024-07-20)
 
 
