@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.2](https://github.com/dnlopes/github-workflows/compare/v1.12.1...v1.12.2) (2024-07-20)
+
+
+### Bug Fixes
+
+* add multiple-binaries on init step ([407cfb0](https://github.com/dnlopes/github-workflows/commit/407cfb0bd01a9e1a47ea87988a06ecd804e61f44))
+
 ## [1.12.1](https://github.com/dnlopes/github-workflows/compare/v1.12.0...v1.12.1) (2024-07-20)
 
 
