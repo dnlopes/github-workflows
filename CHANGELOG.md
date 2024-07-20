@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.4](https://github.com/dnlopes/github-workflows/compare/v1.12.3...v1.12.4) (2024-07-20)
+
+
+### Bug Fixes
+
+* condition ([c1fcc72](https://github.com/dnlopes/github-workflows/commit/c1fcc72fc5d2b9c26b4bd14df619a3d49b25420b))
+
 ## [1.12.3](https://github.com/dnlopes/github-workflows/compare/v1.12.2...v1.12.3) (2024-07-20)
 
 
