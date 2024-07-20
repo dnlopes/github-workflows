@@ -123,9 +123,9 @@ jobs:
         id: init
         run: |
           if [ ${{ inputs.runPlanOrApply }} == true ]; then
-            terraform init -upgrade | tee ${GITHUB_WORKSPACE}/init.out
+            ${{ inputs.binary }} init -upgrade | tee ${GITHUB_WORKSPACE}/init.out
           else
-            terraform init -backend=false | tee ${GITHUB_WORKSPACE}/init.out
+            ${{ inputs.binary }} init -backend=false | tee ${GITHUB_WORKSPACE}/init.out
           fi
 
       - name: Validate
@@ -187,7 +187,7 @@ jobs:
           create_if_not_exists: true
           message: |
             > [!CAUTION]  
-            > Terraform lockfile is not up to date!
+            > terraform.lockfile.hcl is not up to date!
 
       - name: Comment PR (plan)
         uses: GetTerminus/terraform-pr-commenter@v3
