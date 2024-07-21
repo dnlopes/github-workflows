@@ -80,7 +80,9 @@ jobs:
       TOFU_WORKSPACE: ${{ inputs.terraformWorkspace }}
       TF_WORKSPACE: ${{ inputs.terraformWorkspace }}
       CHECK_NAME: Terraform checks
-
+    concurrency:
+      group: terraform-${{ github.repository }}-${{ github.workflow }}-${{ github.ref }}-${{ inputs.terraformWorkspace }}
+      cancel-in-progress: true
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -228,6 +230,9 @@ jobs:
     permissions:
       pull-requests: read
       contents: read
+    concurrency:
+      group: terraform-${{ github.repository }}-${{ github.workflow }}-${{ github.ref }}-${{ inputs.terraformWorkspace }}-snyk
+      cancel-in-progress: true
     defaults:
       run:
         working-directory: ${{ inputs.terraformProjectDir }}
