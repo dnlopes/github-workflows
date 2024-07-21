@@ -49,8 +49,23 @@ jobs:
           scan-type: "fs"
           scan-ref: "."
           ignore-unfixed: true
+          hide-progress: true
           severity: MEDIUM,HIGH,CRITICAL
           output: "trivy-results.output"
+
+      - name: Publish Trivy Output to Summary
+        run: |
+          if [[ -s trivy.txt ]]; then
+            {
+              echo "### Security Output"
+              echo "<details><summary>Click to expand</summary>"
+              echo ""
+              echo '```terraform'
+              cat trivy.txt
+              echo '```'
+              echo "</details>"
+            } >> $GITHUB_STEP_SUMMARY
+          fi
 
       - name: Upload scan results
         uses: github/codeql-action/upload-sarif@v2
