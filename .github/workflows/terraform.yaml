@@ -58,6 +58,7 @@ on:
 jobs:
   terraform:
     name: Run (${{ inputs.terraformAction }})
+    if: contains('opened reopened synchronize', github.event.action)
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
