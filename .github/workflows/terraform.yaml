@@ -220,7 +220,7 @@ jobs:
             -f "state=failure" -f "description=validations failed" \
             -f "context=${{ env.CHECK_NAME }}"
 
-  snyk-scan:
+  terraform-scan:
     if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target'
     name: Snyk
     runs-on: ubuntu-latest
@@ -231,14 +231,13 @@ jobs:
       actions: read
       security-events: write
     concurrency:
-      group: terraform-${{ github.repository }}-${{ github.workflow }}-${{ github.ref }}-${{ inputs.terraformWorkspace }}-snyk
+      group: terraform-${{ github.repository }}-${{ github.workflow }}-${{ github.ref }}-${{ inputs.terraformWorkspace }}-security-scan
       cancel-in-progress: true
     defaults:
       run:
         working-directory: ${{ inputs.terraformProjectDir }}
     env:
       CHECK_NAME: Snyk scan
-      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
     steps:
       - name: Checkout code
@@ -253,11 +252,6 @@ jobs:
             /repos/${{ github.repository }}/statuses/${{ github.event.pull_request.head.sha }} \
             -f "state=pending" -f "description=validations running" \
             -f "context=${{ env.CHECK_NAME }}"
-
-      - name: Scan
-        uses: snyk/actions/node@master
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
       - name: Set status success
         if: ${{ (success() || inputs.IgnoreErrors == true) && (github.event_name == 'pull_request' || github.event_name == 'pull_request_target') }}
