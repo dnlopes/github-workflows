@@ -49,7 +49,6 @@ jobs:
           scan-type: "fs"
           scan-ref: "."
           ignore-unfixed: true
-          hide-progress: true
           severity: MEDIUM,HIGH,CRITICAL
           output: "trivy-results.output"
 
