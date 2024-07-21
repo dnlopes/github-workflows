@@ -1,0 +1,75 @@
+on:
+  workflow_call:
+    inputs:
+      addPullRequestComments:
+        required: false
+        type: boolean
+        default: true
+      ignoreErrors:
+        required: false
+        type: boolean
+        default: false
+        description: whether or not to ignore errors
+
+jobs:
+  security-scan:
+    if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target'
+    name: Snyk
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+      contents: read
+      statuses: write # needed for setting the status of the PR
+      actions: read
+      security-events: write
+    concurrency:
+      group: ${{ github.repository }}-${{ github.workflow }}-${{ github.ref }}-security-scan
+      cancel-in-progress: true
+    env:
+      CHECK_NAME: Security scan
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set pending status
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" \
+            /repos/${{ github.repository }}/statuses/${{ github.event.pull_request.head.sha }} \
+            -f "state=pending" -f "description=validations running" \
+            -f "context=${{ env.CHECK_NAME }}"
+
+      - name: Scan
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          scan-type: "fs"
+          scan-ref: "."
+          format: "sarif"
+          output: "trivy-results.sarif"
+
+      - name: Upload scan results
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: "trivy-results.sarif"
+
+      - name: Set status success
+        if: ${{ (success() || inputs.IgnoreErrors == true) }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" \
+            /repos/${{ github.repository }}/statuses/${{ github.event.pull_request.head.sha }} \
+            -f "state=success" -f "description=validations successful" \
+            -f "context=${{ env.CHECK_NAME }}"
+
+      - name: Set status failure
+        if: ${{ (failure() && inputs.IgnoreErrors == false) }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" \
+            /repos/${{ github.repository }}/statuses/${{ github.event.pull_request.head.sha }} \
+            -f "state=failure" -f "description=validations failed" \
+            -f "context=${{ env.CHECK_NAME }}"
