@@ -43,13 +43,14 @@ jobs:
 
       - name: Scan
         uses: aquasecurity/trivy-action@0.24.0
+        env:
+          TRIVY_DEPENDENCY_TREE: true
         with:
           scan-type: "fs"
           scan-ref: "."
           ignore-unfixed: true
           severity: MEDIUM,HIGH,CRITICAL
-          #format: "sarif"
-          #output: "trivy-results.sarif"
+          output: "trivy-results.output"
 
       - name: Upload scan results
         uses: github/codeql-action/upload-sarif@v2
