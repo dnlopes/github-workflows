@@ -230,6 +230,7 @@ jobs:
     permissions:
       pull-requests: read
       contents: read
+      statuses: write # needed for setting the status of the PR
     concurrency:
       group: terraform-${{ github.repository }}-${{ github.workflow }}-${{ github.ref }}-${{ inputs.terraformWorkspace }}-snyk
       cancel-in-progress: true
