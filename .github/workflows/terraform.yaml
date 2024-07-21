@@ -237,6 +237,7 @@ jobs:
         working-directory: ${{ inputs.terraformProjectDir }}
     env:
       CHECK_NAME: Snyk scan
+      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
     steps:
       - name: Checkout code
